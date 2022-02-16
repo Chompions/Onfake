@@ -97,14 +97,18 @@ fun CreateProfile() {
         ActivityResultContracts.PickContact()) {
         if (it != null) {
             val cursor = context.contentResolver.query(it, null, null, null, null)
-            if (cursor != null) {
-                cursor.moveToFirst()
-                val contactNameIndex: Int = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                val contactPhotoIndex: Int = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI)
-                nameText = cursor.getString(contactNameIndex)
-                photoUri = Uri.parse(cursor.getString(contactPhotoIndex)) // TODO: crash if uri return null
-                cursor.close()
-            }
+            cursor?.moveToFirst()
+
+            val contactNameIndex: Int = cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME) ?: -1
+            val contactPhotoIndex: Int = cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI) ?: -1
+
+            val contactName = cursor?.getString(contactNameIndex)
+            val contactPhoto = cursor?.getString(contactPhotoIndex)
+
+            nameText = if (!contactName.isNullOrBlank()) cursor.getString(contactNameIndex) else ""
+            photoUri = if (!contactPhoto.isNullOrBlank()) Uri.parse(cursor.getString(contactPhotoIndex)) else null
+
+            cursor?.close()
         }
     }
 
@@ -388,43 +392,60 @@ fun CreateProfile() {
             ) {
                 Text("Use Existing Contact")
             }
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colors.primary.copy(alpha = .2f),
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .size(100.dp)
-                    .clickable {
-                        getPhotoUri.launch("image/*")
-                    }
-            ) {
-                if (photoUri == null) {
-                    Icon(
-                        Icons.Default.PhotoCamera,
-                        contentDescription = "Photo",
-                        modifier = Modifier.padding(20.dp),
-                        tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
-                    )
-                } else {
-                    GlideImage(
-                        imageModel = photoUri,
-                        contentScale = ContentScale.Crop,
-                        circularReveal = CircularReveal(duration = 1000),
-                        requestOptions = {
-                            RequestOptions().override(500 , 500)
-                        },
-                        loading = {
-                            CircularProgressIndicator(Modifier.align(Alignment.Center))
-                        },
-                        failure = {
-                            Icon(
-                                Icons.Default.BrokenImage,
-                                contentDescription = "Photo",
-                                modifier = Modifier.padding(20.dp).align(Alignment.Center),
-                                tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
-                            )
+            Box {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colors.primary.copy(alpha = .2f),
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .size(100.dp)
+                        .clickable {
+                            getPhotoUri.launch("image/*")
                         }
-                    )
+                ) {
+                    if (photoUri == null) {
+                        Icon(
+                            Icons.Default.PhotoCamera,
+                            contentDescription = "Photo",
+                            modifier = Modifier.padding(20.dp),
+                            tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                        )
+                    } else {
+                        GlideImage(
+                            imageModel = photoUri,
+                            contentScale = ContentScale.Crop,
+                            circularReveal = CircularReveal(duration = 1000),
+                            requestOptions = {
+                                RequestOptions().override(500 , 500)
+                            },
+                            loading = {
+                                CircularProgressIndicator(Modifier.align(Alignment.Center))
+                            },
+                            failure = {
+                                Icon(
+                                    Icons.Default.BrokenImage,
+                                    contentDescription = "Photo",
+                                    modifier = Modifier
+                                        .padding(20.dp)
+                                        .align(Alignment.Center),
+                                    tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                                )
+                            }
+                        )
+                    }
+                }
+                if (photoUri != null) {
+                    IconButton(
+                        onClick = { photoUri = null },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .absoluteOffset(10.dp, 10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Cancel,
+                            contentDescription = "Cancel photo",
+                        )
+                    }
                 }
             }
             OutlinedTextField(
