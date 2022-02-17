@@ -1,4 +1,4 @@
-package com.sawelo.onfake
+package com.sawelo.onfake.call_screen.whatsapp_second
 
 import android.app.Activity
 import android.view.animation.Interpolator
@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
+import com.sawelo.onfake.LocalContact
+import com.sawelo.onfake.R
+import com.sawelo.onfake.call_screen.whatsapp_first.FirstWhatsAppActivity
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.roundToInt
@@ -69,47 +73,67 @@ fun FirstWhatsAppIncomingCall(
                     color = Color(0xFF004B44)
                 )
                 .padding(
-                    vertical = 6.dp,
+                    vertical = 10.dp,
                     horizontal = 20.dp,
                 )
                 .weight(4f)
                 .fillMaxWidth()
         ) {
-            EncryptedText()
+            Box(
+                Modifier
+                    .weight(1f)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                EncryptedText()
+            }
             Surface(
                 shape = CircleShape,
                 elevation = 8.dp,
                 modifier = Modifier
-                    .padding(top = 20.dp)
+                    .weight(3f)
+                    .padding(5.dp)
                     .size(100.dp),
                 color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
             ) {
-                GlideImage(
-                    imageModel = LocalContact.current.photoBitmap,
-                    requestOptions = {
-                        RequestOptions().override(500 , 500)
-                    },
-                    contentScale = ContentScale.Crop,
-                )
+                if (!LocalView.current.isInEditMode) {
+                    GlideImage(
+                        imageModel = LocalContact.current.photoBitmap,
+                        requestOptions = {
+                            RequestOptions().override(500, 500)
+                        },
+                        contentScale = ContentScale.Crop,
+                    )
+                }
             }
-            NameText(
-                name = LocalContact.current.name,
-                Modifier.padding(top = 16.dp)
-            )
-            Text(
-                text = "Whatsapp voice call",
-                fontSize = 17.sp,
-                color = Color.White,
-                fontWeight = FontWeight.W400,
-                modifier = Modifier.padding(top = 16.dp)
-            )
+            Box(
+                Modifier
+                    .weight(1f)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                NameText(name = LocalContact.current.name)
+            }
+            Box(
+                Modifier
+                    .weight(1f)
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Whatsapp voice call",
+                    fontSize = 17.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.W400,
+                    )
+            }
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom,
             modifier = Modifier
                 .background(color = Color(0xFF202930))
-                .padding(horizontal = 40.dp, vertical = 30.dp)
+                .padding(30.dp)
                 .weight(7f)
                 .fillMaxWidth()
         ) {
@@ -284,7 +308,7 @@ fun MiddleButton(
 fun DefaultPreview2() {
     OnFakeTheme {
         FirstWhatsAppIncomingCall(
-            inCallScreen = false,
+            inCallScreen = true,
         )
     }
 }

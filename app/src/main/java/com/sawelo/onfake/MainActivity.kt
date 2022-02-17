@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -411,27 +412,29 @@ fun CreateProfile() {
                             tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
                         )
                     } else {
-                        GlideImage(
-                            imageModel = photoUri,
-                            contentScale = ContentScale.Crop,
-                            circularReveal = CircularReveal(duration = 1000),
-                            requestOptions = {
-                                RequestOptions().override(500 , 500)
-                            },
-                            loading = {
-                                CircularProgressIndicator(Modifier.align(Alignment.Center))
-                            },
-                            failure = {
-                                Icon(
-                                    Icons.Default.BrokenImage,
-                                    contentDescription = "Photo",
-                                    modifier = Modifier
-                                        .padding(20.dp)
-                                        .align(Alignment.Center),
-                                    tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
-                                )
-                            }
-                        )
+                        if (!LocalView.current.isInEditMode) {
+                            GlideImage(
+                                imageModel = photoUri,
+                                contentScale = ContentScale.Crop,
+                                circularReveal = CircularReveal(duration = 1000),
+                                requestOptions = {
+                                    RequestOptions().override(500 , 500)
+                                },
+                                loading = {
+                                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                                },
+                                failure = {
+                                    Icon(
+                                        Icons.Default.BrokenImage,
+                                        contentDescription = "Photo",
+                                        modifier = Modifier
+                                            .padding(20.dp)
+                                            .align(Alignment.Center),
+                                        tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
                 if (photoUri != null) {

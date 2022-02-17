@@ -1,4 +1,4 @@
-package com.sawelo.onfake
+package com.sawelo.onfake.call_screen.whatsapp_first
 
 import android.app.Activity
 import android.content.Intent
@@ -16,16 +16,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.request.RequestOptions
+import com.sawelo.onfake.LocalContact
 import com.sawelo.onfake.receiver.DeclineReceiver
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.delay
 
+
+@Preview(
+    showBackground = true,
+    device = Devices.PIXEL_3A
+)
 @Composable
 fun FirstWhatsAppOngoingCall(
-    activity: Activity?,
+    activity: Activity? = null,
 ) {
     val context = LocalContext.current
 
@@ -65,23 +74,24 @@ fun FirstWhatsAppOngoingCall(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .background(
                     color = Color(0xFF004B44)
                 )
-                .weight(8f)
                 .fillMaxWidth()
+                .weight(8f)
                 .padding(
-                    top = 10.dp,
-                    bottom = 2.dp,
-                    start = 6.dp,
-                    end = 6.dp,
+                    horizontal = 10.dp,
+                    vertical = 6.dp,
                 )
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(2f)
             ) {
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
@@ -99,16 +109,28 @@ fun FirstWhatsAppOngoingCall(
                         .size(size = 28.dp)
                 )
             }
-            NameText(
-                name = LocalContact.current.name,
-                Modifier.padding(top = 8.dp),
-            )
-            Text(
-                "${stringMin}:${stringSec}",
-                fontSize = 18.sp,
-                color = Color.White,
-                modifier = Modifier.padding(top = 18.dp)
-            )
+            Box(
+                Modifier
+                    .weight(3f)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                NameText(
+                    name = LocalContact.current.name,
+                )
+            }
+            Box(
+                Modifier
+                    .weight(2f)
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "${stringMin}:${stringSec}",
+                    fontSize = 18.sp,
+                    color = Color.White,
+                )
+            }
         }
         Box(
             contentAlignment = Alignment.BottomCenter,
@@ -119,13 +141,15 @@ fun FirstWhatsAppOngoingCall(
             Surface(
                 modifier = Modifier.fillMaxSize()
             ) {
-                GlideImage(
-                    imageModel = LocalContact.current.photoBitmap,
-                    requestOptions = {
-                        RequestOptions().override(500 , 500)
-                    },
-                    contentScale = ContentScale.Crop,
-                )
+                if (!LocalView.current.isInEditMode) {
+                    GlideImage(
+                        imageModel = LocalContact.current.photoBitmap,
+                        requestOptions = {
+                            RequestOptions().override(1000 , 1000)
+                        },
+                        contentScale = ContentScale.Crop,
+                    )
+                }
             }
             CanvasButton(
                 icon = Icons.Default.CallEnd,
@@ -145,8 +169,8 @@ fun FirstWhatsAppOngoingCall(
                 .background(
                     color = Color(0xFF004B44)
                 )
-                .weight(4f)
                 .fillMaxWidth()
+                .weight(4f)
         ) {
             Icon(
                 Icons.Default.VolumeUp,

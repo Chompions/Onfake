@@ -1,4 +1,4 @@
-package com.sawelo.onfake
+package com.sawelo.onfake.call_screen.whatsapp_first
 
 import android.content.Intent
 import android.os.Bundle
@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.sawelo.onfake.LocalContact
+import com.sawelo.onfake.MainActivity
+import com.sawelo.onfake.R
 import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.data_class.ContactData
 import com.sawelo.onfake.receiver.DeclineReceiver
@@ -94,7 +97,7 @@ class FirstWhatsAppActivity : ComponentActivity() {
 }
 
 @Composable
-fun EncryptedText() {
+fun EncryptedText(modifier: Modifier = Modifier) {
     val encryptedId = "ENCRYPTED_ID"
     val encryptedText = buildAnnotatedString {
         appendInlineContent(encryptedId, "[Lock]")
@@ -120,6 +123,7 @@ fun EncryptedText() {
     )
 
     Text(
+        modifier = modifier,
         text = encryptedText,
         inlineContent = encryptedInlineContent,
         fontSize = 14.sp,
