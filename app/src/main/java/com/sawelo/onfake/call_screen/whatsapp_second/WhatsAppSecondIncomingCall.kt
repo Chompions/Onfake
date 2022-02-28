@@ -40,7 +40,7 @@ import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
 import com.sawelo.onfake.LocalContact
 import com.sawelo.onfake.R
-import com.sawelo.onfake.call_screen.whatsapp_first.FirstWhatsAppActivity
+import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstActivity
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.roundToInt
@@ -56,22 +56,21 @@ class ShakingInterpolator(
 }
 
 @Composable
-fun FirstWhatsAppIncomingCall(
+fun WhatsAppSecondIncomingCall(
     modifier: Modifier = Modifier,
     activity: Activity? = null,
     navController: NavController? = null,
     inCallScreen: Boolean,
 ) {
     Column(
-        modifier = modifier
+        modifier = modifier.then(
+            Modifier.background(color = Color(0xFF325666))
+        )
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .background(
-                    color = Color(0xFF004B44)
-                )
                 .padding(
                     vertical = 10.dp,
                     horizontal = 20.dp,
@@ -132,7 +131,6 @@ fun FirstWhatsAppIncomingCall(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom,
             modifier = Modifier
-                .background(color = Color(0xFF202930))
                 .padding(30.dp)
                 .weight(7f)
                 .fillMaxWidth()
@@ -142,7 +140,7 @@ fun FirstWhatsAppIncomingCall(
             Text(
                 text = "Swipe up to accept",
                 color = Color.White.copy(alpha = .5f),
-                fontSize = 20.sp,
+                fontSize = 15.sp,
             )
         }
     }
@@ -215,7 +213,7 @@ fun BottomButtons(
                 Icon(
                     painterResource(id = R.drawable.ic_arrows_overlay),
                     "Arrow",
-                    tint = Color(0xFF202930),
+                    tint = Color(0xFF325666),
                 )
             }
             MiddleButton(navController, inCallScreen)
@@ -280,8 +278,8 @@ fun MiddleButton(
                 onDragStarted = { isAnimated = false },
                 onDragStopped = {
                     if (offsetY == -350f) {
-                        navController?.navigate(FirstWhatsAppActivity.ongoingCallRoute) {
-                            popUpTo(FirstWhatsAppActivity.incomingCallRoute) { inclusive = true }
+                        navController?.navigate(WhatsAppFirstActivity.ongoingCallRoute) {
+                            popUpTo(WhatsAppFirstActivity.incomingCallRoute) { inclusive = true }
                         }
                     }
                     isAnimated = true
@@ -307,7 +305,7 @@ fun MiddleButton(
 @Composable
 fun DefaultPreview2() {
     OnFakeTheme {
-        FirstWhatsAppIncomingCall(
+        WhatsAppSecondIncomingCall(
             inCallScreen = true,
         )
     }

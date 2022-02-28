@@ -35,6 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.request.RequestOptions
 import com.sawelo.onfake.`object`.UpdateTextObject
+import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstIncomingCall
+import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondActivity
+import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondIncomingCall
 import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.data_class.ClockType
 import com.sawelo.onfake.data_class.ScheduleData
@@ -366,6 +369,7 @@ fun CreateProfile() {
                     val profileData = CallProfileData(scheduleData = setScheduleData)
                     if (nameText.isNotBlank()) profileData.name = nameText
                     if (photoUri != null) profileData.photoUri = photoUri as Uri
+                    profileData.callScreen = WhatsAppSecondActivity::class.java
 
                     val intent = Intent(context, AlarmService::class.java)
                         .putExtra(MainActivity.PROFILE_EXTRA, profileData)
@@ -488,7 +492,7 @@ fun CreateProfile() {
                     color = MaterialTheme.colors.primary.copy(alpha = .2f),
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    FirstWhatsAppIncomingCall(
+                    WhatsAppFirstIncomingCall(
                         inCallScreen = false,
                         modifier = Modifier
                             .size(screenWidth * scale, screenHeight * scale)
@@ -501,7 +505,7 @@ fun CreateProfile() {
                     color = MaterialTheme.colors.primary.copy(alpha = .2f),
                     modifier = Modifier.padding(8.dp)
                 ) {
-                    FirstWhatsAppIncomingCall(
+                    WhatsAppSecondIncomingCall(
                         inCallScreen = false,
                         modifier = Modifier
                             .size(screenWidth * scale, screenHeight * scale)

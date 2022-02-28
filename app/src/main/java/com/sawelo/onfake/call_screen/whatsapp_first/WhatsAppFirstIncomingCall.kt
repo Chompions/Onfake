@@ -55,7 +55,7 @@ class ShakingInterpolator(
 }
 
 @Composable
-fun FirstWhatsAppIncomingCall(
+fun WhatsAppFirstIncomingCall(
     modifier: Modifier = Modifier,
     activity: Activity? = null,
     navController: NavController? = null,
@@ -279,8 +279,8 @@ fun MiddleButton(
                 onDragStarted = { isAnimated = false },
                 onDragStopped = {
                     if (offsetY == -350f) {
-                        navController?.navigate(FirstWhatsAppActivity.ongoingCallRoute) {
-                            popUpTo(FirstWhatsAppActivity.incomingCallRoute) { inclusive = true }
+                        navController?.navigate(WhatsAppFirstActivity.ongoingCallRoute) {
+                            popUpTo(WhatsAppFirstActivity.incomingCallRoute) { inclusive = true }
                         }
                     }
                     isAnimated = true
@@ -306,7 +306,7 @@ fun MiddleButton(
 @Composable
 fun DefaultPreview2() {
     OnFakeTheme {
-        FirstWhatsAppIncomingCall(
+        WhatsAppFirstIncomingCall(
             inCallScreen = true,
         )
     }

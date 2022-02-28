@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Parcelable
 import com.sawelo.onfake.BuildConfig
 import com.sawelo.onfake.R
+import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstActivity
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -13,5 +14,6 @@ data class CallProfileData(
         "android.resource://" +
                 BuildConfig.APPLICATION_ID + "/" +
                 R.drawable.default_profile_picture),
-    val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER)
+    val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER),
+    var callScreen: Class<*> = WhatsAppFirstActivity::class.java
 ) : Parcelable

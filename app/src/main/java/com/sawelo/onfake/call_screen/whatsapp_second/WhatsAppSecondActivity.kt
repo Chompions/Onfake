@@ -36,7 +36,7 @@ import com.sawelo.onfake.data_class.ContactData
 import com.sawelo.onfake.receiver.DeclineReceiver
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 
-class FirstWhatsAppActivity : ComponentActivity() {
+class WhatsAppSecondActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         super.onBackPressed()
@@ -73,15 +73,15 @@ class FirstWhatsAppActivity : ComponentActivity() {
                         }
                     ) {
                         composable(incomingCallRoute) {
-                            FirstWhatsAppIncomingCall(
-                                activity = this@FirstWhatsAppActivity,
+                            WhatsAppSecondIncomingCall(
+                                activity = this@WhatsAppSecondActivity,
                                 navController = navController,
                                 inCallScreen = true
                             )
                         }
                         composable(ongoingCallRoute) {
-                            FirstWhatsAppOngoingCall(
-                                this@FirstWhatsAppActivity
+                            WhatsAppSecondOngoingCall(
+                                this@WhatsAppSecondActivity
                             )
                         }
                     }

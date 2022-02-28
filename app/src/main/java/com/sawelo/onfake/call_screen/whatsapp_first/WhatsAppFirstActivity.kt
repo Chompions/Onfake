@@ -36,7 +36,7 @@ import com.sawelo.onfake.data_class.ContactData
 import com.sawelo.onfake.receiver.DeclineReceiver
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 
-class FirstWhatsAppActivity : ComponentActivity() {
+class WhatsAppFirstActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         super.onBackPressed()
@@ -45,6 +45,7 @@ class FirstWhatsAppActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        println("HSUEFHUSIEFHUISFH WHATSAPP FIRST ACTIVITY IS STARTING")
 
         // Stop all services before starting this activity
         val declineIntent = Intent(this, DeclineReceiver::class.java)
@@ -73,15 +74,15 @@ class FirstWhatsAppActivity : ComponentActivity() {
                         }
                     ) {
                         composable(incomingCallRoute) {
-                            FirstWhatsAppIncomingCall(
-                                activity = this@FirstWhatsAppActivity,
+                            WhatsAppFirstIncomingCall(
+                                activity = this@WhatsAppFirstActivity,
                                 navController = navController,
                                 inCallScreen = true
                             )
                         }
                         composable(ongoingCallRoute) {
-                            FirstWhatsAppOngoingCall(
-                                this@FirstWhatsAppActivity
+                            WhatsAppFirstOngoingCall(
+                                this@WhatsAppFirstActivity
                             )
                         }
                     }

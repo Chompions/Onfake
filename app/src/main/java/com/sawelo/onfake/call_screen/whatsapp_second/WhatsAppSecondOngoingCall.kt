@@ -33,7 +33,7 @@ import kotlinx.coroutines.delay
     device = Devices.PIXEL_3A
 )
 @Composable
-fun FirstWhatsAppOngoingCall(
+fun WhatsAppSecondOngoingCall(
     activity: Activity? = null,
 ) {
     val context = LocalContext.current

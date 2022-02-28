@@ -18,21 +18,25 @@
         <receiver
             android:name=".receiver.DeclineReceiver"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
 
         <service
             android:name=".service.NotificationService"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
         <service
             android:name=".service.AlarmService"
             android:enabled="true"
             android:exported="false" />
 
         <activity
-            android:name=".FirstWhatsAppActivity"
+            android:name=".call_screen.whatsapp_first.WhatsAppFirstActivity"
             android:exported="false"
-            android:label="@string/title_activity_first_whats_app_call"
+            android:screenOrientation="sensorPortrait"
+            android:theme="@style/Theme.OnFake.NoActionBar" />
+        <activity
+            android:name=".call_screen.whatsapp_second.WhatsAppSecondActivity"
+            android:exported="false"
             android:screenOrientation="sensorPortrait"
             android:theme="@style/Theme.OnFake.NoActionBar" />
         <activity

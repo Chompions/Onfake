@@ -14,7 +14,6 @@ import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
-import com.sawelo.onfake.FirstWhatsAppActivity
 import com.sawelo.onfake.MainActivity
 import com.sawelo.onfake.R
 import com.sawelo.onfake.data_class.CallProfileData
@@ -65,12 +64,14 @@ class NotificationService : Service() {
             }
         }
 
+        println("GIEJFUSEHGU ${callProfile.callScreen}")
+
         // Initialize Intents
-        val defaultIntent = Intent(this, FirstWhatsAppActivity::class.java)
+        val defaultIntent = Intent(this, callProfile.callScreen)
             .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
             .putExtra(MainActivity.START_FROM_INCOMING_EXTRA, true)
 
-        val answerIntent = Intent(this, FirstWhatsAppActivity::class.java)
+        val answerIntent = Intent(this, callProfile.callScreen)
             .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
             .putExtra(MainActivity.START_FROM_INCOMING_EXTRA, false)
 

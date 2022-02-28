@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">OnFake</string>
-    <string name="title_activity_first_whats_app_call">FirstWhatsAppCall</string>
-    <string name="title_activity_first_whats_app_ongoing_call">FirstWhatsAppOngoingCall</string>
-    <string name="title_activity_first_whats_app_ref">FirstWhatsAppRef</string>
     <string name="name">Name</string>
     <string name="incoming_voice_call">Incoming Voice Call</string>
     <string name="contact_picture">Contact Picture</string>
