@@ -25,7 +25,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -34,13 +36,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.request.RequestOptions
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.sawelo.onfake.`object`.UpdateTextObject
 import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstIncomingCall
-import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondActivity
 import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondIncomingCall
-import com.sawelo.onfake.data_class.CallProfileData
-import com.sawelo.onfake.data_class.ClockType
-import com.sawelo.onfake.data_class.ScheduleData
+import com.sawelo.onfake.data_class.*
 import com.sawelo.onfake.service.AlarmService
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 import com.skydoves.landscapist.CircularReveal
@@ -59,22 +59,23 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val PROFILE_EXTRA = "profile_extra"
-        const val START_FROM_INCOMING_EXTRA = "start_from_incoming_extra"
+        const val IS_START_FROM_INCOMING_EXTRA = "is_start_from_incoming_extra"
     }
 }
 
 @Composable
 fun CreateProfile() {
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
+    val systemUiController = rememberSystemUiController()
 
-    val screenHeight = configuration.screenHeightDp.dp
-    val screenWidth = configuration.screenWidthDp.dp
-    val scale = .5F
+    systemUiController.setSystemBarsColor(
+        color = Color.Transparent
+    )
 
     var nameText by rememberSaveable { mutableStateOf("") }
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var mainScheduleText by rememberSaveable { mutableStateOf("Schedule Call") }
+    var callScreen by rememberSaveable { mutableStateOf(CallScreen.WHATSAPP_FIRST) }
 
     var openScheduleListDialog by rememberSaveable { mutableStateOf(false) }
     var openTimerDialog by rememberSaveable { mutableStateOf(false) }
@@ -93,31 +94,37 @@ fun CreateProfile() {
     var setScheduleData by rememberSaveable { mutableStateOf(ScheduleData(ClockType.TIMER)) }
 
     val getPhotoUri = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()) {
+        ActivityResultContracts.GetContent()
+    ) {
         photoUri = it
     }
 
     val getContactUri = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickContact()) {
+        ActivityResultContracts.PickContact()
+    ) {
         if (it != null) {
             val cursor = context.contentResolver.query(it, null, null, null, null)
             cursor?.moveToFirst()
 
-            val contactNameIndex: Int = cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME) ?: -1
-            val contactPhotoIndex: Int = cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI) ?: -1
+            val contactNameIndex: Int =
+                cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME) ?: -1
+            val contactPhotoIndex: Int =
+                cursor?.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_URI) ?: -1
 
             val contactName = cursor?.getString(contactNameIndex)
             val contactPhoto = cursor?.getString(contactPhotoIndex)
 
             nameText = if (!contactName.isNullOrBlank()) cursor.getString(contactNameIndex) else ""
-            photoUri = if (!contactPhoto.isNullOrBlank()) Uri.parse(cursor.getString(contactPhotoIndex)) else null
+            photoUri =
+                if (!contactPhoto.isNullOrBlank()) Uri.parse(cursor.getString(contactPhotoIndex)) else null
 
             cursor?.close()
         }
     }
 
     val getContactPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()) { isGranted ->
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
         if (isGranted) {
             getContactUri.launch(null)
         }
@@ -129,7 +136,7 @@ fun CreateProfile() {
     val timeList = mutableListOf(
         ScheduleData(
             ClockType.TIMER,
-            minute = 0
+            second = 10
         ),
         ScheduleData(
             ClockType.TIMER,
@@ -359,17 +366,181 @@ fun CreateProfile() {
         )
     }
 
-    Scaffold(
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text(text = "Create") },
-                icon = { Icon(Icons.Default.AddIcCall, "Create") },
+    Scaffold {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(horizontal = 10.dp)
+                .background(MaterialTheme.colors.background)
+                .fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .weight(9F)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Button(
+                    onClick = { getContactPermission.launch(android.Manifest.permission.READ_CONTACTS) },
+                    modifier = Modifier.padding(top = 10.dp)
+                ) {
+                    Text("Use Existing Contact")
+                }
+
+                Box {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colors.primary.copy(alpha = .2f),
+                        modifier = Modifier
+                            .padding(top = 10.dp)
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                getPhotoUri.launch("image/*")
+                            }
+                    ) {
+                        if (photoUri == null) {
+                            Icon(
+                                Icons.Default.PhotoCamera,
+                                contentDescription = "Photo",
+                                modifier = Modifier.padding(20.dp),
+                                tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                            )
+                        } else {
+                            if (!LocalView.current.isInEditMode) {
+                                GlideImage(
+                                    imageModel = photoUri,
+                                    contentScale = ContentScale.Crop,
+                                    circularReveal = CircularReveal(duration = 1000),
+                                    requestOptions = {
+                                        RequestOptions().override(500, 500)
+                                    },
+                                    loading = {
+                                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+                                    },
+                                    failure = {
+                                        Icon(
+                                            Icons.Default.BrokenImage,
+                                            contentDescription = "Photo",
+                                            modifier = Modifier
+                                                .padding(20.dp)
+                                                .align(Alignment.Center),
+                                            tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    if (photoUri != null) {
+                        IconButton(
+                            onClick = { photoUri = null },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .absoluteOffset(10.dp, 10.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Cancel,
+                                contentDescription = "Cancel photo",
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    shape = RoundedCornerShape(8.dp),
+                    label = { Text("Name") },
+                    leadingIcon = { Icon(Icons.Default.Person, "Name") },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colors.onPrimary,
+                        unfocusedBorderColor = MaterialTheme.colors.primary
+                    ),
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .fillMaxWidth()
+                )
+
+                OutlinedButton(
+                    onClick = { openScheduleListDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(top = 10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Schedule,
+                        "Schedule",
+                    )
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text(mainScheduleText)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    val contactData = ContactData()
+                    if (nameText.isNotBlank()) contactData.name =
+                        nameText else ContactDataDefaultValue.nameValue
+                    if (photoUri != null) contactData.photoBitmap = photoUri as Uri else Uri.parse(
+                        ContactDataDefaultValue.photoBitmapValue
+                    )
+
+                    val configuration = LocalConfiguration.current
+
+                    val screenHeight = configuration.screenHeightDp.dp
+                    val screenWidth = configuration.screenWidthDp.dp
+                    val scale = .5F
+
+                    val callScreenModifier = Modifier
+                        .size(screenWidth * scale, screenHeight * scale)
+                        .requiredSize(screenWidth, screenHeight)
+                        .scale(scale)
+                        .clip(RoundedCornerShape(8.dp))
+
+                    val callScreenMap: Map<CallScreen, @Composable () -> Unit> = mapOf(
+                        CallScreen.WHATSAPP_FIRST to {
+                            WhatsAppFirstIncomingCall(
+                                isStartAnimation = false,
+                                modifier = callScreenModifier,
+                                contactData = contactData
+                            )
+                        },
+                        CallScreen.WHATSAPP_SECOND to {
+                            WhatsAppSecondIncomingCall(
+                                isStartAnimation = false,
+                                modifier = callScreenModifier,
+                                contactData = contactData
+                            )
+                        },
+                    )
+
+                    callScreenMap.forEach {
+                        CallScreenRow(
+                            thisCallScreen = it.key,
+                            currentCallScreen = callScreen,
+                            composableCallScreen = it.value,
+                            onClick = { thisCallScreen ->
+                                callScreen = thisCallScreen
+                            }
+                        )
+                    }
+                }
+            }
+
+            Button(
                 shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .weight(1F)
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
                 onClick = {
                     val profileData = CallProfileData(scheduleData = setScheduleData)
                     if (nameText.isNotBlank()) profileData.name = nameText
                     if (photoUri != null) profileData.photoUri = photoUri as Uri
-                    profileData.callScreen = WhatsAppSecondActivity::class.java
+                    profileData.callScreen = callScreen
 
                     val intent = Intent(context, AlarmService::class.java)
                         .putExtra(MainActivity.PROFILE_EXTRA, profileData)
@@ -379,142 +550,54 @@ fun CreateProfile() {
                     } else {
                         context.startService(intent)
                     }
-                })
-        }
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .padding(horizontal = 10.dp)
-                .background(MaterialTheme.colors.background)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-
-        ) {
-            Button(
-                onClick = {getContactPermission.launch(android.Manifest.permission.READ_CONTACTS)},
-                modifier = Modifier.padding(top = 10.dp)
+                }
             ) {
-                Text("Use Existing Contact")
+                Icon(Icons.Default.AddIcCall, "Create",)
+                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                Text("Create")
             }
-            Box {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colors.primary.copy(alpha = .2f),
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .size(100.dp)
-                        .clickable {
-                            getPhotoUri.launch("image/*")
-                        }
-                ) {
-                    if (photoUri == null) {
-                        Icon(
-                            Icons.Default.PhotoCamera,
-                            contentDescription = "Photo",
-                            modifier = Modifier.padding(20.dp),
-                            tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
-                        )
-                    } else {
-                        if (!LocalView.current.isInEditMode) {
-                            GlideImage(
-                                imageModel = photoUri,
-                                contentScale = ContentScale.Crop,
-                                circularReveal = CircularReveal(duration = 1000),
-                                requestOptions = {
-                                    RequestOptions().override(500 , 500)
-                                },
-                                loading = {
-                                    CircularProgressIndicator(Modifier.align(Alignment.Center))
-                                },
-                                failure = {
-                                    Icon(
-                                        Icons.Default.BrokenImage,
-                                        contentDescription = "Photo",
-                                        modifier = Modifier
-                                            .padding(20.dp)
-                                            .align(Alignment.Center),
-                                        tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-                if (photoUri != null) {
-                    IconButton(
-                        onClick = { photoUri = null },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .absoluteOffset(10.dp, 10.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Cancel,
-                            contentDescription = "Cancel photo",
-                        )
-                    }
-                }
-            }
-            OutlinedTextField(
-                value = nameText,
-                onValueChange = { nameText = it },
-                shape = RoundedCornerShape(8.dp),
-                label = { Text("Name") },
-                leadingIcon = { Icon(Icons.Default.Person, "Name") },
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colors.onPrimary,
-                    unfocusedBorderColor = MaterialTheme.colors.primary
-                ),
-                modifier = Modifier
-                    .padding(top = 10.dp)
-                    .fillMaxWidth()
+        }
+
+    }
+}
+
+@Composable
+fun CallScreenRow(
+    thisCallScreen: CallScreen,
+    currentCallScreen: CallScreen,
+    composableCallScreen: @Composable () -> Unit,
+    onClick: (CallScreen) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .padding(
+                vertical = 10.dp,
+                horizontal = 8.dp
             )
-            OutlinedButton(
-                onClick = { openScheduleListDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(top = 10.dp)
-            ) {
-                Icon(
-                    Icons.Default.Schedule,
-                    "Schedule",
-                )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(mainScheduleText)
-            }
+            .clickable { onClick(thisCallScreen) }
+    ) {
+        composableCallScreen()
 
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState())
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colors.primary.copy(alpha = .2f),
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    WhatsAppFirstIncomingCall(
-                        inCallScreen = false,
-                        modifier = Modifier
-                            .size(screenWidth * scale, screenHeight * scale)
-                            .requiredSize(screenWidth, screenHeight)
-                            .scale(scale)
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colors.primary.copy(alpha = .2f),
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    WhatsAppSecondIncomingCall(
-                        inCallScreen = false,
-                        modifier = Modifier
-                            .size(screenWidth * scale, screenHeight * scale)
-                            .requiredSize(screenWidth, screenHeight)
-                            .scale(scale)
-                    )
-                }
-            }
+        if (currentCallScreen == thisCallScreen) {
+            Icon(
+                imageVector = Icons.Default.RadioButtonChecked,
+                contentDescription = "Check",
+                tint = MaterialTheme.colors.primary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.RadioButtonUnchecked,
+                contentDescription = "Uncheck",
+                tint = MaterialTheme.colors.primaryVariant,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            )
         }
+
     }
 }
 

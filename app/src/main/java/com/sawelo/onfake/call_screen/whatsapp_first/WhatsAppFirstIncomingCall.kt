@@ -38,9 +38,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
-import com.sawelo.onfake.LocalContact
 import com.sawelo.onfake.R
-import com.sawelo.onfake.ui.theme.OnFakeTheme
+import com.sawelo.onfake.call_screen.CallScreenActivity
+import com.sawelo.onfake.call_screen.CanvasButton
+import com.sawelo.onfake.call_screen.EncryptedText
+import com.sawelo.onfake.call_screen.NameText
+import com.sawelo.onfake.data_class.ContactData
 import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -54,12 +57,18 @@ class ShakingInterpolator(
     }
 }
 
+
+@Preview(
+    showBackground = true,
+    device = Devices.PIXEL_3A
+)
 @Composable
 fun WhatsAppFirstIncomingCall(
     modifier: Modifier = Modifier,
     activity: Activity? = null,
     navController: NavController? = null,
-    inCallScreen: Boolean,
+    isStartAnimation: Boolean = false,
+    contactData: ContactData = ContactData()
 ) {
     Column(
         modifier = modifier
@@ -97,7 +106,7 @@ fun WhatsAppFirstIncomingCall(
             ) {
                 if (!LocalView.current.isInEditMode) {
                     GlideImage(
-                        imageModel = LocalContact.current.photoBitmap,
+                        imageModel = contactData.photoBitmap,
                         requestOptions = {
                             RequestOptions().override(500, 500)
                         },
@@ -111,7 +120,7 @@ fun WhatsAppFirstIncomingCall(
                     .padding(2.dp),
                 contentAlignment = Alignment.Center
             ) {
-                NameText(name = LocalContact.current.name)
+                NameText(name = contactData.name)
             }
             Box(
                 Modifier
@@ -136,12 +145,12 @@ fun WhatsAppFirstIncomingCall(
                 .weight(7f)
                 .fillMaxWidth()
         ) {
-            BottomButtons(activity, navController, inCallScreen)
+            BottomButtons(activity, navController, isStartAnimation)
             Spacer(modifier = Modifier.size(20.dp))
             Text(
                 text = "Swipe up to accept",
                 color = Color.White.copy(alpha = .5f),
-                fontSize = 20.sp,
+                fontSize = 15.sp,
             )
         }
     }
@@ -279,8 +288,8 @@ fun MiddleButton(
                 onDragStarted = { isAnimated = false },
                 onDragStopped = {
                     if (offsetY == -350f) {
-                        navController?.navigate(WhatsAppFirstActivity.ongoingCallRoute) {
-                            popUpTo(WhatsAppFirstActivity.incomingCallRoute) { inclusive = true }
+                        navController?.navigate(CallScreenActivity.ONGOING_CALL_ROUTE) {
+                            popUpTo(CallScreenActivity.INCOMING_CALL_ROUTE) { inclusive = true }
                         }
                     }
                     isAnimated = true
@@ -295,19 +304,6 @@ fun MiddleButton(
                 y = moveUp.dp,
                 x = shake.dp
             ) else Modifier.offset { IntOffset(0, offsetY.roundToInt()) }
-        )
-    }
-}
-
-@Preview(
-    showBackground = true,
-    device = Devices.PIXEL_3A
-)
-@Composable
-fun DefaultPreview2() {
-    OnFakeTheme {
-        WhatsAppFirstIncomingCall(
-            inCallScreen = true,
         )
     }
 }

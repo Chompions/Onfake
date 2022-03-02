@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -38,10 +39,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
-import com.sawelo.onfake.LocalContact
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.sawelo.onfake.R
-import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstActivity
-import com.sawelo.onfake.ui.theme.OnFakeTheme
+import com.sawelo.onfake.call_screen.CallScreenActivity
+import com.sawelo.onfake.call_screen.CanvasButton
+import com.sawelo.onfake.call_screen.NameText
+import com.sawelo.onfake.data_class.ContactData
 import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -55,16 +58,28 @@ class ShakingInterpolator(
     }
 }
 
+@Preview(
+    showBackground = true,
+    device = Devices.PIXEL_3A
+)
 @Composable
 fun WhatsAppSecondIncomingCall(
     modifier: Modifier = Modifier,
     activity: Activity? = null,
     navController: NavController? = null,
-    inCallScreen: Boolean,
+    isStartAnimation: Boolean = false,
+    contactData: ContactData = ContactData()
 ) {
+    if (activity != null) {
+        val systemUiController = rememberSystemUiController()
+        systemUiController.setSystemBarsColor(
+            color = Color(0xFF008069)
+        )
+    }
+
     Column(
         modifier = modifier.then(
-            Modifier.background(color = Color(0xFF325666))
+            Modifier.background(color = Color(0xFF008069))
         )
     ) {
         Column(
@@ -78,26 +93,17 @@ fun WhatsAppSecondIncomingCall(
                 .weight(4f)
                 .fillMaxWidth()
         ) {
-            Box(
-                Modifier
-                    .weight(1f)
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                EncryptedText()
-            }
             Surface(
                 shape = CircleShape,
                 elevation = 8.dp,
                 modifier = Modifier
-                    .weight(3f)
                     .padding(5.dp)
                     .size(100.dp),
                 color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
             ) {
                 if (!LocalView.current.isInEditMode) {
                     GlideImage(
-                        imageModel = LocalContact.current.photoBitmap,
+                        imageModel = contactData.photoBitmap,
                         requestOptions = {
                             RequestOptions().override(500, 500)
                         },
@@ -107,23 +113,21 @@ fun WhatsAppSecondIncomingCall(
             }
             Box(
                 Modifier
-                    .weight(1f)
-                    .padding(2.dp),
+                    .padding(top = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                NameText(name = LocalContact.current.name)
+                NameText(name = contactData.name)
             }
             Box(
                 Modifier
-                    .weight(1f)
-                    .padding(8.dp),
+                    .padding(top = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Whatsapp voice call",
                     fontSize = 17.sp,
                     color = Color.White,
-                    fontWeight = FontWeight.W400,
+                    fontWeight = FontWeight.W300,
                     )
             }
         }
@@ -135,12 +139,12 @@ fun WhatsAppSecondIncomingCall(
                 .weight(7f)
                 .fillMaxWidth()
         ) {
-            BottomButtons(activity, navController, inCallScreen)
+            BottomButtons(activity, navController, isStartAnimation)
             Spacer(modifier = Modifier.size(20.dp))
             Text(
                 text = "Swipe up to accept",
                 color = Color.White.copy(alpha = .5f),
-                fontSize = 15.sp,
+                fontSize = 12.sp,
             )
         }
     }
@@ -150,7 +154,7 @@ fun WhatsAppSecondIncomingCall(
 fun BottomButtons(
     activity: Activity? = null,
     navController: NavController? = null,
-    inCallScreen: Boolean,
+    isStartAnimation: Boolean,
 ) {
     val infiniteTransition = rememberInfiniteTransition()
 
@@ -167,7 +171,7 @@ fun BottomButtons(
         )
     )
 
-    val offsetModifier: Modifier = if (inCallScreen) {
+    val offsetModifier: Modifier = if (isStartAnimation) {
         Modifier
             .size(24.dp, 135.dp)
             .clipToBounds()
@@ -186,10 +190,11 @@ fun BottomButtons(
         CanvasButton(
             icon = Icons.Default.CallEnd,
             iconColor = Color.Red,
-            backgroundColor = Color(0xFF1A2227),
+            backgroundColor = Color(0xFF005244),
             modifier = Modifier
                 .clip(CircleShape)
-                .clickable(inCallScreen) {
+                .scale(.95F)
+                .clickable(isStartAnimation) {
                     activity?.finish()
                 }
         )
@@ -197,7 +202,10 @@ fun BottomButtons(
             contentAlignment = Alignment.BottomCenter,
         ) {
             Box(
-                modifier = Modifier.offset(y = (-70).dp)
+                modifier = Modifier
+                    .offset(y = (-70).dp)
+                    .scale(.8F),
+                contentAlignment = Alignment.Center
             ) {
                 Canvas(
                     modifier = offsetModifier
@@ -213,16 +221,19 @@ fun BottomButtons(
                 Icon(
                     painterResource(id = R.drawable.ic_arrows_overlay),
                     "Arrow",
-                    tint = Color(0xFF325666),
+                    tint = Color(0xFF008069),
                 )
             }
-            MiddleButton(navController, inCallScreen)
+            MiddleButton(navController, isStartAnimation)
         }
         CanvasButton(
             icon = ImageVector.vectorResource(id = R.drawable.ic_reply),
             iconSize = 24F,
             iconColor = Color.White,
-            backgroundColor = Color(0xFF1A2227),
+            backgroundColor = Color(0xFF005244),
+            modifier = Modifier
+                .clip(CircleShape)
+                .scale(.95F)
         )
     }
 }
@@ -230,9 +241,9 @@ fun BottomButtons(
 @Composable
 fun MiddleButton(
     navController: NavController? = null,
-    inCallScreen: Boolean,
+    isStartAnimation: Boolean,
 ) {
-    var isAnimated by remember { mutableStateOf(inCallScreen) }
+    var isAnimated by remember { mutableStateOf(isStartAnimation) }
     var offsetY by remember { mutableStateOf(0f) }
 
     val infiniteTransition = rememberInfiniteTransition()
@@ -269,7 +280,7 @@ fun MiddleButton(
     Box(
         modifier = Modifier
             .draggable(
-                enabled = inCallScreen,
+                enabled = isStartAnimation,
                 orientation = Orientation.Vertical,
                 state = rememberDraggableState { delta ->
                     val coercedOffset = offsetY + delta
@@ -278,8 +289,8 @@ fun MiddleButton(
                 onDragStarted = { isAnimated = false },
                 onDragStopped = {
                     if (offsetY == -350f) {
-                        navController?.navigate(WhatsAppFirstActivity.ongoingCallRoute) {
-                            popUpTo(WhatsAppFirstActivity.incomingCallRoute) { inclusive = true }
+                        navController?.navigate(CallScreenActivity.ONGOING_CALL_ROUTE) {
+                            popUpTo(CallScreenActivity.INCOMING_CALL_ROUTE) { inclusive = true }
                         }
                     }
                     isAnimated = true
@@ -290,23 +301,12 @@ fun MiddleButton(
             icon = Icons.Filled.Call,
             iconColor = Color.White,
             backgroundColor = Color(0xFF02D65D),
-            modifier = if (isAnimated) Modifier.offset(
-                y = moveUp.dp,
-                x = shake.dp
-            ) else Modifier.offset { IntOffset(0, offsetY.roundToInt()) }
-        )
-    }
-}
-
-@Preview(
-    showBackground = true,
-    device = Devices.PIXEL_3A
-)
-@Composable
-fun DefaultPreview2() {
-    OnFakeTheme {
-        WhatsAppSecondIncomingCall(
-            inCallScreen = true,
+            modifier = Modifier.scale(.95F).then(
+                if (isAnimated) Modifier.offset(
+                    y = moveUp.dp,
+                    x = shake.dp
+                ) else Modifier.offset { IntOffset(0, offsetY.roundToInt()) }
+            )
         )
     }
 }

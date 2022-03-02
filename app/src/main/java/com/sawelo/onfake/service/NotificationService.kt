@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.sawelo.onfake.MainActivity
 import com.sawelo.onfake.R
+import com.sawelo.onfake.call_screen.CallScreenActivity
 import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.receiver.DeclineReceiver
 import kotlinx.coroutines.Dispatchers
@@ -64,16 +65,16 @@ class NotificationService : Service() {
             }
         }
 
-        println("GIEJFUSEHGU ${callProfile.callScreen}")
-
         // Initialize Intents
-        val defaultIntent = Intent(this, callProfile.callScreen)
+        val defaultIntent = Intent(this, CallScreenActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
-            .putExtra(MainActivity.START_FROM_INCOMING_EXTRA, true)
+            .putExtra(MainActivity.IS_START_FROM_INCOMING_EXTRA, true)
 
-        val answerIntent = Intent(this, callProfile.callScreen)
+        val answerIntent = Intent(this, CallScreenActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
-            .putExtra(MainActivity.START_FROM_INCOMING_EXTRA, false)
+            .putExtra(MainActivity.IS_START_FROM_INCOMING_EXTRA, false)
 
         val declineIntent = Intent(this, DeclineReceiver::class.java)
 
@@ -115,10 +116,10 @@ class NotificationService : Service() {
         }
 
         // Applying PendingIntents on buttons in customNotification
-        customNotificationLayout.setOnClickPendingIntent(
-            R.id.notification_layout,
-            defaultPendingIntent
-        )
+//        customNotificationLayout.setOnClickPendingIntent(
+//            R.id.notification_layout,
+//            defaultPendingIntent
+//        )
         customNotificationLayout.setOnClickPendingIntent(R.id.btnAnswer, answerPendingIntent)
         customNotificationLayout.setOnClickPendingIntent(R.id.btnDecline, declinePendingIntent)
 
@@ -154,6 +155,7 @@ class NotificationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
             .setVibrate(longArrayOf(1000, 1000))
+            .setAutoCancel(true)
 
         val buildNotification: Notification = builder.build().apply {
             this.flags = Notification.FLAG_INSISTENT
@@ -168,7 +170,8 @@ class NotificationService : Service() {
 
             override fun onFinish() {
                 Log.d("NotificationService", "Finished")
-                this@NotificationService.sendBroadcast(declineIntent)
+                this@NotificationService.sendBroadcast(
+                    Intent(CallScreenActivity.DESTROY_ACTIVITY))
             }
         }
 
@@ -177,7 +180,7 @@ class NotificationService : Service() {
         stopService(alarmIntent)
 
         stopTimer.start()
-        notificationManager.notify(NOTIFICATION_ID, buildNotification)
+        startForeground(NOTIFICATION_ID, buildNotification)
         return START_STICKY
     }
 
@@ -185,7 +188,7 @@ class NotificationService : Service() {
 
     override fun onDestroy() {
         Log.d("Destroy", "NotificationService is destroyed")
-        notificationManager.cancel(NOTIFICATION_ID)
+        stopSelf()
         stopTimer.cancel()
         super.onDestroy()
     }

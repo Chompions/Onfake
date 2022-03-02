@@ -3,9 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.sawelo.onfake">
 
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -30,15 +34,16 @@
             android:exported="false" />
 
         <activity
-            android:name=".call_screen.whatsapp_first.WhatsAppFirstActivity"
+            android:name=".call_screen.CallScreenActivity"
             android:exported="false"
+            android:launchMode="singleTop"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
             android:screenOrientation="sensorPortrait"
-            android:theme="@style/Theme.OnFake.NoActionBar" />
-        <activity
-            android:name=".call_screen.whatsapp_second.WhatsAppSecondActivity"
-            android:exported="false"
-            android:screenOrientation="sensorPortrait"
-            android:theme="@style/Theme.OnFake.NoActionBar" />
+            android:theme="@style/Theme.OnFake.NoActionBar"
+            tools:targetApi="o_mr1" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

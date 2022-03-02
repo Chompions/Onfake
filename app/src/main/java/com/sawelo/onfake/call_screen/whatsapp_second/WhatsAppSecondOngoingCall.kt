@@ -22,7 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.request.RequestOptions
-import com.sawelo.onfake.LocalContact
+import com.sawelo.onfake.call_screen.CanvasButton
+import com.sawelo.onfake.call_screen.EncryptedText
+import com.sawelo.onfake.call_screen.NameText
+import com.sawelo.onfake.data_class.ContactData
 import com.sawelo.onfake.receiver.DeclineReceiver
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.delay
@@ -35,6 +38,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun WhatsAppSecondOngoingCall(
     activity: Activity? = null,
+    contactData: ContactData = ContactData()
 ) {
     val context = LocalContext.current
 
@@ -116,7 +120,7 @@ fun WhatsAppSecondOngoingCall(
                 contentAlignment = Alignment.Center
             ) {
                 NameText(
-                    name = LocalContact.current.name,
+                    name = contactData.name,
                 )
             }
             Box(
@@ -143,7 +147,7 @@ fun WhatsAppSecondOngoingCall(
             ) {
                 if (!LocalView.current.isInEditMode) {
                     GlideImage(
-                        imageModel = LocalContact.current.photoBitmap,
+                        imageModel = contactData.photoBitmap,
                         requestOptions = {
                             RequestOptions().override(1000 , 1000)
                         },

@@ -5,7 +5,11 @@ import com.sawelo.onfake.BuildConfig
 import com.sawelo.onfake.R
 
 data class ContactData(
-    val name: String = "Citra",
-    val photoBitmap: Uri = Uri.parse(
-        "android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.drawable.default_profile_picture)
+    var name: String = ContactDataDefaultValue.nameValue,
+    var photoBitmap: Uri = Uri.parse(ContactDataDefaultValue.photoBitmapValue)
 )
+
+object ContactDataDefaultValue {
+    const val nameValue: String = "Citra"
+    const val photoBitmapValue: String = ("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.drawable.default_profile_picture)
+}
