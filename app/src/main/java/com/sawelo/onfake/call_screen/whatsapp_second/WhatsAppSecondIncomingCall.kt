@@ -11,10 +11,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
@@ -104,6 +101,9 @@ fun WhatsAppSecondIncomingCall(
                 if (!LocalView.current.isInEditMode) {
                     GlideImage(
                         imageModel = contactData.photoBitmap,
+                        loading = {
+                            CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        },
                         requestOptions = {
                             RequestOptions().override(500, 500)
                         },
@@ -127,7 +127,7 @@ fun WhatsAppSecondIncomingCall(
                     text = "Whatsapp voice call",
                     fontSize = 17.sp,
                     color = Color.White,
-                    fontWeight = FontWeight.W300,
+                    fontWeight = FontWeight.W400,
                     )
             }
         }

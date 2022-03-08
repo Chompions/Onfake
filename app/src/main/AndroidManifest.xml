@@ -17,7 +17,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.OnFake"
+        android:theme="@style/Theme.Onfake.Starting"
         tools:ignore="LockedOrientationActivity">
         <receiver
             android:name=".receiver.DeclineReceiver"
@@ -25,7 +25,11 @@
             android:exported="false" />
 
         <service
-            android:name=".service.NotificationService"
+            android:name=".service.CallNotificationService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".service.ScheduleNotificationService"
             android:enabled="true"
             android:exported="false" />
         <service
@@ -35,20 +39,20 @@
 
         <activity
             android:name=".call_screen.CallScreenActivity"
+            android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
+            android:screenOrientation="sensorPortrait"
             android:showOnLockScreen="true"
             android:showWhenLocked="true"
             android:taskAffinity=""
-            android:excludeFromRecents="true"
-            android:screenOrientation="sensorPortrait"
             android:theme="@style/Theme.OnFake.NoActionBar"
             tools:targetApi="o_mr1" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="sensorPortrait"
-            android:theme="@style/Theme.OnFake.NoActionBar">
+            android:theme="@style/Theme.Onfake.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

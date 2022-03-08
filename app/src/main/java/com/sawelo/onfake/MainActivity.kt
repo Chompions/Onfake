@@ -1,10 +1,13 @@
 package com.sawelo.onfake
 
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.view.View
+import android.view.animation.AccelerateInterpolator
 import android.widget.NumberPicker
 import android.widget.TimePicker
 import androidx.activity.ComponentActivity
@@ -27,16 +30,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.animation.doOnEnd
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.bumptech.glide.request.RequestOptions
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.sawelo.onfake.`object`.DeclineObject
 import com.sawelo.onfake.`object`.UpdateTextObject
 import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstIncomingCall
 import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondIncomingCall
@@ -45,10 +50,34 @@ import com.sawelo.onfake.service.AlarmService
 import com.sawelo.onfake.ui.theme.OnFakeTheme
 import com.skydoves.landscapist.CircularReveal
 import com.skydoves.landscapist.glide.GlideImage
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+
+        splashScreen.setOnExitAnimationListener { splashScreenView ->
+            // Create your custom animation.
+            val slideUp = ObjectAnimator.ofFloat(
+                splashScreenView.view,
+                View.TRANSLATION_Y,
+                0f,
+                -splashScreenView.view.height.toFloat()
+            )
+            slideUp.interpolator = AccelerateInterpolator()
+            slideUp.duration = 500L
+
+            // Call SplashScreenView.remove at the end of your custom animation.
+            slideUp.doOnEnd { splashScreenView.remove() }
+
+            // Run your animation.
+            slideUp.start()
+        }
+
         super.onCreate(savedInstanceState)
         setContent {
             OnFakeTheme {
@@ -63,35 +92,34 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Preview(showBackground = true)
 @Composable
 fun CreateProfile() {
     val context = LocalContext.current
-    val systemUiController = rememberSystemUiController()
-
-    systemUiController.setSystemBarsColor(
-        color = Color.Transparent
-    )
+    val timeZone = TimeZone.currentSystemDefault()
 
     var nameText by rememberSaveable { mutableStateOf("") }
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var mainScheduleText by rememberSaveable { mutableStateOf("Schedule Call") }
     var callScreen by rememberSaveable { mutableStateOf(CallScreen.WHATSAPP_FIRST) }
+    var checkShowNotificationText by rememberSaveable { mutableStateOf(false) }
 
     var openScheduleListDialog by rememberSaveable { mutableStateOf(false) }
     var openTimerDialog by rememberSaveable { mutableStateOf(false) }
     var openAlarmDialog by rememberSaveable { mutableStateOf(false) }
 
-    var tempSecond by rememberSaveable { mutableStateOf(0) }
-    var tempMinute by rememberSaveable { mutableStateOf(0) }
-    var tempHour by rememberSaveable { mutableStateOf(0) }
+    var tempTimeData by rememberSaveable { mutableStateOf(TimeData())}
+    var fixedScheduleData by rememberSaveable { mutableStateOf(
+        ScheduleData(ClockType.TIMER, TimeData())) }
 
-    fun cleanTempData() {
-        tempHour = 0
-        tempMinute = 0
-        tempSecond = 0
+    fun getNowTimeData(now: Instant): TimeData {
+        val nowDateTime = now.toLocalDateTime(timeZone)
+        return TimeData(
+            hour = nowDateTime.hour,
+            minute = nowDateTime.minute,
+            second = nowDateTime.second
+        )
     }
-
-    var setScheduleData by rememberSaveable { mutableStateOf(ScheduleData(ClockType.TIMER)) }
 
     val getPhotoUri = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -136,19 +164,23 @@ fun CreateProfile() {
     val timeList = mutableListOf(
         ScheduleData(
             ClockType.TIMER,
-            second = 10
+            TimeData(second = 0)
         ),
         ScheduleData(
             ClockType.TIMER,
-            minute = 2
+            TimeData(second = 10)
         ),
         ScheduleData(
             ClockType.TIMER,
-            minute = 5
+            TimeData(minute = 2)
         ),
         ScheduleData(
             ClockType.TIMER,
-            minute = 10
+            TimeData(minute = 5)
+        ),
+        ScheduleData(
+            ClockType.TIMER,
+            TimeData(minute = 10)
         )
     )
 
@@ -165,11 +197,9 @@ fun CreateProfile() {
 
                         Button(
                             onClick = {
-                                setScheduleData = ScheduleData(
+                                fixedScheduleData = ScheduleData(
                                     it.clockType,
-                                    hour = it.hour,
-                                    minute = it.minute,
-                                    second = it.second
+                                    it.targetTime,
                                 )
 
                                 mainScheduleText = text.first
@@ -223,7 +253,7 @@ fun CreateProfile() {
             buttons = {
                 Button(
                     onClick = {
-                        cleanTempData()
+                        tempTimeData = TimeData()
                         openScheduleListDialog = false
                     },
                     modifier = Modifier.padding(10.dp)
@@ -246,30 +276,30 @@ fun CreateProfile() {
                     AndroidView(factory = {
                         NumberPicker(it).apply {
                             minValue = 0
-                            maxValue = 24
-                            value = setScheduleData.hour
+                            maxValue = 23
+                            value = fixedScheduleData.targetTime.hour
                             setOnValueChangedListener { _, _, newVal ->
-                                tempHour = newVal
+                                tempTimeData.hour = newVal
                             }
                         }
                     })
                     AndroidView(factory = {
                         NumberPicker(it).apply {
                             minValue = 0
-                            maxValue = 60
-                            value = setScheduleData.minute
+                            maxValue = 59
+                            value = fixedScheduleData.targetTime.minute
                             setOnValueChangedListener { _, _, newVal ->
-                                tempMinute = newVal
+                                tempTimeData.minute = newVal
                             }
                         }
                     })
                     AndroidView(factory = {
                         NumberPicker(it).apply {
                             minValue = 0
-                            maxValue = 60
-                            value = setScheduleData.second
+                            maxValue = 59
+                            value = fixedScheduleData.targetTime.second
                             setOnValueChangedListener { _, _, newVal ->
-                                tempSecond = newVal
+                                tempTimeData.second = newVal
                             }
                         }
                     })
@@ -279,7 +309,7 @@ fun CreateProfile() {
                 Row {
                     Button(
                         onClick = {
-                            cleanTempData()
+                            tempTimeData = TimeData()
                             openTimerDialog = false
                         },
                         modifier = Modifier.padding(10.dp)
@@ -288,14 +318,16 @@ fun CreateProfile() {
                     }
                     Button(
                         onClick = {
-                            setScheduleData = ScheduleData(
+                            fixedScheduleData = ScheduleData(
                                 ClockType.TIMER,
-                                hour = tempHour,
-                                minute = tempMinute,
-                                second = tempSecond
+                                TimeData(
+                                    hour = tempTimeData.hour,
+                                    minute = tempTimeData.minute,
+                                    second = tempTimeData.second
+                                ),
                             )
 
-                            val text = UpdateTextObject.updateMainText(setScheduleData)
+                            val text = UpdateTextObject.updateMainText(fixedScheduleData)
                             mainScheduleText = text.first
 
                             openTimerDialog = false
@@ -321,12 +353,13 @@ fun CreateProfile() {
                     AndroidView(factory = {
                         TimePicker(it).apply {
                             if (Build.VERSION.SDK_INT >= 23) {
-                                this.hour = setScheduleData.hour
-                                this.minute = setScheduleData.minute
+                                val now = Clock.System.now().toLocalDateTime(timeZone)
+                                this.hour = now.hour
+                                this.minute = now.minute
                             }
                             setOnTimeChangedListener { _, hourOfDay, minute ->
-                                tempHour = hourOfDay
-                                tempMinute = minute
+                                tempTimeData.hour = hourOfDay
+                                tempTimeData.minute = minute
                             }
                         }
                     })
@@ -336,7 +369,7 @@ fun CreateProfile() {
                 Row {
                     Button(
                         onClick = {
-                            cleanTempData()
+                            tempTimeData = TimeData()
                             openAlarmDialog = false
                         },
                         modifier = Modifier.padding(10.dp)
@@ -345,14 +378,16 @@ fun CreateProfile() {
                     }
                     Button(
                         onClick = {
-                            setScheduleData = ScheduleData(
+                            fixedScheduleData = ScheduleData(
                                 ClockType.ALARM,
-                                hour = tempHour,
-                                minute = tempMinute,
-                                second = tempSecond
+                                TimeData(
+                                    hour = tempTimeData.hour,
+                                    minute = tempTimeData.minute,
+                                    second = tempTimeData.second
+                                ),
                             )
 
-                            val text = UpdateTextObject.updateMainText(setScheduleData)
+                            val text = UpdateTextObject.updateMainText(fixedScheduleData)
                             mainScheduleText = text.first
 
                             openAlarmDialog = false
@@ -404,7 +439,7 @@ fun CreateProfile() {
                                 Icons.Default.PhotoCamera,
                                 contentDescription = "Photo",
                                 modifier = Modifier.padding(20.dp),
-                                tint = MaterialTheme.colors.primaryVariant.copy(alpha = .5f)
+                                tint = MaterialTheme.colors.primary.copy(alpha = .5f)
                             )
                         } else {
                             if (!LocalView.current.isInEditMode) {
@@ -478,6 +513,22 @@ fun CreateProfile() {
                 }
 
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Switch(
+                        checked = checkShowNotificationText,
+                        onCheckedChange = {checkShowNotificationText = it},
+                    )
+                    Text(
+                        "Show schedule in notification",
+                        fontSize = 14.sp
+
+                    )
+                }
+
+                Row(
                     modifier = Modifier
                         .horizontalScroll(rememberScrollState())
                 ) {
@@ -517,15 +568,17 @@ fun CreateProfile() {
                         },
                     )
 
-                    callScreenMap.forEach {
-                        CallScreenRow(
-                            thisCallScreen = it.key,
-                            currentCallScreen = callScreen,
-                            composableCallScreen = it.value,
-                            onClick = { thisCallScreen ->
-                                callScreen = thisCallScreen
-                            }
-                        )
+                    if (!LocalView.current.isInEditMode) {
+                        callScreenMap.forEach {
+                            CallScreenRow(
+                                thisCallScreen = it.key,
+                                currentCallScreen = callScreen,
+                                composableCallScreen = it.value,
+                                onClick = { thisCallScreen ->
+                                    callScreen = thisCallScreen
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -537,22 +590,37 @@ fun CreateProfile() {
                     .fillMaxWidth()
                     .padding(vertical = 10.dp),
                 onClick = {
-                    val profileData = CallProfileData(scheduleData = setScheduleData)
+                    fixedScheduleData.startTime = getNowTimeData(Clock.System.now())
+
+                    val profileData = CallProfileData(
+                        scheduleData = fixedScheduleData,
+                        showNotificationText = checkShowNotificationText,
+                    )
+
                     if (nameText.isNotBlank()) profileData.name = nameText
                     if (photoUri != null) profileData.photoUri = photoUri as Uri
                     profileData.callScreen = callScreen
 
-                    val intent = Intent(context, AlarmService::class.java)
+                    val declineData = DeclineData(
+                        originInformation = "MainActivity",
+                        isDestroyAlarmService = true,
+                        isDestroyCallNotification = true,
+                        isDestroyCallScreenActivity = true
+                    )
+
+                    DeclineObject.declineFunction(context, declineData)
+
+                    val alarmIntent = Intent(context, AlarmService::class.java)
                         .putExtra(MainActivity.PROFILE_EXTRA, profileData)
 
                     if (Build.VERSION.SDK_INT >= 26) {
-                        context.startForegroundService(intent)
+                        context.startForegroundService(alarmIntent)
                     } else {
-                        context.startService(intent)
+                        context.startService(alarmIntent)
                     }
                 }
             ) {
-                Icon(Icons.Default.AddIcCall, "Create",)
+                Icon(Icons.Default.AddIcCall, "Create")
                 Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                 Text("Create")
             }
@@ -598,13 +666,5 @@ fun CallScreenRow(
             )
         }
 
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    OnFakeTheme(darkTheme = false) {
-        CreateProfile()
     }
 }

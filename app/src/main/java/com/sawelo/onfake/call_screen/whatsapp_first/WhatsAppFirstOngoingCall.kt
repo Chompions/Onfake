@@ -1,7 +1,6 @@
 package com.sawelo.onfake.call_screen.whatsapp_first
 
 import android.app.Activity
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,7 +24,6 @@ import com.sawelo.onfake.call_screen.CanvasButton
 import com.sawelo.onfake.call_screen.EncryptedText
 import com.sawelo.onfake.call_screen.NameText
 import com.sawelo.onfake.data_class.ContactData
-import com.sawelo.onfake.receiver.DeclineReceiver
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.delay
 
@@ -38,13 +35,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun WhatsAppFirstOngoingCall(
     activity: Activity? = null,
-    contactData: ContactData = ContactData()
+    contactData: ContactData = ContactData(),
+    callback: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-
-    // Send broadcast to cancel everything
-    val declineIntent = Intent(context, DeclineReceiver::class.java)
-    context.sendBroadcast(declineIntent)
+    if (callback != null) {
+        callback()
+    }
 
     var intSec by remember { mutableStateOf(0) }
     var intMin by remember { mutableStateOf(0) }

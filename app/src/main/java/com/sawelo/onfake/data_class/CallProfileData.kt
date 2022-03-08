@@ -14,7 +14,8 @@ data class CallProfileData(
                 BuildConfig.APPLICATION_ID + "/" +
                 R.drawable.default_profile_picture),
     var callScreen: CallScreen = CallScreen.WHATSAPP_FIRST,
-    val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER),
+    val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER, TimeData()),
+    val showNotificationText: Boolean = false
 ) : Parcelable
 
 enum class CallScreen {

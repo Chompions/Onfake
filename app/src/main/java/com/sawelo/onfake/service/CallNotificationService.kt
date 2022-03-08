@@ -24,20 +24,14 @@ import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 
-class NotificationService : Service() {
-
-    companion object {
-        const val CHANNEL_ID = "call_id"
-        const val CHANNEL_NAME = "Call Channel"
-        const val NOTIFICATION_ID = 2
-    }
+class CallNotificationService : Service() {
 
     private lateinit var stopTimer: CountDownTimer
     private lateinit var callProfile: CallProfileData
     private lateinit var notificationManager: NotificationManager
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("NotificationService", "Starting NotificationService")
+        Log.d(THIS_CLASS, "Starting CallNotificationService")
 
         callProfile = intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -48,7 +42,7 @@ class NotificationService : Service() {
         )
 
         runBlocking(Dispatchers.IO) {
-            val bitmap = Glide.with(this@NotificationService)
+            val bitmap = Glide.with(this@CallNotificationService)
                 .asBitmap()
                 .load(callProfile.photoUri)
                 .apply(
@@ -161,21 +155,20 @@ class NotificationService : Service() {
             this.flags = Notification.FLAG_INSISTENT
         }
 
-        // Countdown until NotificationService stops
+        // Countdown until CallNotificationService stops
         stopTimer = object : CountDownTimer(25000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 val secondsUntilFinished = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished)
-                Log.d("NotificationService", "Countdown: $secondsUntilFinished")
+                Log.d(THIS_CLASS, "Countdown: $secondsUntilFinished")
             }
 
             override fun onFinish() {
-                Log.d("NotificationService", "Finished")
-                this@NotificationService.sendBroadcast(
-                    Intent(CallScreenActivity.DESTROY_ACTIVITY))
+                Log.d(THIS_CLASS, "Finished")
+                this@CallNotificationService.sendBroadcast(declineIntent)
             }
         }
 
-        // Stop AlarmService before starting this NotificationService
+        // Stop AlarmService before starting this CallNotificationService
         val alarmIntent = Intent(this, AlarmService::class.java)
         stopService(alarmIntent)
 
@@ -187,9 +180,15 @@ class NotificationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        Log.d("Destroy", "NotificationService is destroyed")
-        stopSelf()
+        Log.d(THIS_CLASS, "CallNotificationService is destroyed")
         stopTimer.cancel()
         super.onDestroy()
+    }
+
+    companion object {
+        const val THIS_CLASS = "CallNotificationService"
+        const val CHANNEL_ID = "call_id"
+        const val CHANNEL_NAME = "Call Channel"
+        const val NOTIFICATION_ID = 2
     }
 }

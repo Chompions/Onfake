@@ -11,5 +11,6 @@ data class ContactData(
 
 object ContactDataDefaultValue {
     const val nameValue: String = "Citra"
-    const val photoBitmapValue: String = ("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.drawable.default_profile_picture)
+    const val photoBitmapValue: String =
+        ("android.resource://" + BuildConfig.APPLICATION_ID + "/" + R.drawable.default_profile_picture)
 }
