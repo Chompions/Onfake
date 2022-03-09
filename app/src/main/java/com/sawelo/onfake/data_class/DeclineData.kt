@@ -9,4 +9,5 @@ data class DeclineData(
     val isDestroyAlarmService: Boolean,
     val isDestroyCallNotification: Boolean,
     val isDestroyCallScreenActivity: Boolean,
+    val isDeactivateCallMainActivity: Boolean = true,
 ): Parcelable

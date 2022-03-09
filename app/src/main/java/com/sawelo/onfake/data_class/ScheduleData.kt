@@ -2,7 +2,9 @@ package com.sawelo.onfake.data_class
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Parcelize
 data class ScheduleData(
     val clockType: ClockType,
@@ -10,6 +12,7 @@ data class ScheduleData(
     var startTime: TimeData? = null,
 ): Parcelable
 
+@Serializable
 @Parcelize
 data class TimeData(
     var hour: Int = 0,

@@ -38,7 +38,7 @@ import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.sawelo.onfake.R
-import com.sawelo.onfake.call_screen.CallScreenActivity
+import com.sawelo.onfake.CallScreenActivity
 import com.sawelo.onfake.call_screen.CanvasButton
 import com.sawelo.onfake.call_screen.NameText
 import com.sawelo.onfake.data_class.ContactData

@@ -9,11 +9,15 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.MainActivity
 import com.sawelo.onfake.R
 import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.data_class.ClockType
 import com.sawelo.onfake.receiver.DeclineReceiver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -31,6 +35,7 @@ class AlarmService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        IS_RUNNING = true
         Log.d(THIS_CLASS, "Starting AlarmService")
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -69,7 +74,7 @@ class AlarmService : Service() {
         // Build Notification
         builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Alarm")
-            .setContentText("Setting up the alarm")
+            .setContentText(DEFAULT_NOTIFICATION_TEXT)
             .setSmallIcon(R.drawable.ic_baseline_notifications)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOnlyAlertOnce(true)
@@ -85,6 +90,11 @@ class AlarmService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         callProfile = intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
 
+        CoroutineScope(Dispatchers.IO).launch {
+            val db = AppDatabase.getInstance(this@AlarmService)
+            db.callProfileDao().insertAll(callProfile)
+        }
+
         settingIntent()
         setCallAlarm()
         if (callProfile.showNotificationText) updateNotification()
@@ -95,7 +105,6 @@ class AlarmService : Service() {
     private fun settingIntent() {
         //Setting intent for ScheduleNotificationService
         notificationIntent = Intent(this, ScheduleNotificationService::class.java)
-            .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
 
         @SuppressLint("UnspecifiedImmutableFlag")
         notificationPendingIntent = if (Build.VERSION.SDK_INT >= 23) {
@@ -112,7 +121,6 @@ class AlarmService : Service() {
 
         // Setting intent for CallNotificationService
         callIntent = Intent(this, CallNotificationService::class.java)
-            .putExtra(MainActivity.PROFILE_EXTRA, callProfile)
 
         @SuppressLint("UnspecifiedImmutableFlag")
         callPendingIntent = if (Build.VERSION.SDK_INT >= 23) {
@@ -192,6 +200,7 @@ class AlarmService : Service() {
         alarmManager.cancel(callPendingIntent)
         alarmManager.cancel(notificationPendingIntent)
         notificationManager.cancel(NOTIFICATION_ID)
+        IS_RUNNING = false
 
         super.onDestroy()
     }
@@ -200,9 +209,11 @@ class AlarmService : Service() {
         const val THIS_CLASS = "AlarmService"
         const val CHANNEL_ID = "onfake_id"
         const val CHANNEL_NAME = "Onfake Channel"
+        const val DEFAULT_NOTIFICATION_TEXT = "Setting up the alarm"
         const val NOTIFICATION_ID = 1
         const val DECLINE_PENDING_INTENT_CODE = 21
         const val CALL_PENDING_INTENT_CODE = 11
         const val NOTIFICATION_PENDING_INTENT_CODE = 12
+        var IS_RUNNING = false
     }
 }

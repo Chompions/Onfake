@@ -3,9 +3,11 @@ package com.sawelo.onfake.`object`
 import android.util.Log
 import com.sawelo.onfake.data_class.ClockType
 import com.sawelo.onfake.data_class.ScheduleData
-import java.util.*
+import kotlinx.datetime.*
 
 object UpdateTextObject {
+
+    private const val THIS_CLASS = "UpdateTextObject"
 
     /**
      *  This function will return string for mainScheduleText in MainActivity
@@ -15,122 +17,120 @@ object UpdateTextObject {
      *  Result will vary according to clockType to adjust input time type
      */
     fun updateMainText(
-        scheduleData: ScheduleData
+        scheduleData: ScheduleData,
     ): Pair<String, String> {
-        var mainScheduleText = ""
-        var notificationText = ""
+        val mainScheduleText: String
+        val notificationText: String
         val displayText: String
 
-        // Get current time from phone
-        val c: Calendar = Calendar.getInstance()
-        val currentHour = c.get(Calendar.HOUR_OF_DAY)
-        val currentMinute = c.get(Calendar.MINUTE)
+        val timeZone = TimeZone.currentSystemDefault()
+        val now = Clock.System.now()
+        val nowDateTime = now.toLocalDateTime(timeZone)
 
-        // Get time data from constructor
-        val hour = scheduleData.hour
-        val minute = scheduleData.minute
-        val second = scheduleData.second
         val clockType = scheduleData.clockType
+        val targetTime = LocalDateTime(
+            nowDateTime.year,
+            nowDateTime.monthNumber,
+            nowDateTime.dayOfMonth,
+            scheduleData.targetTime.hour,
+            scheduleData.targetTime.minute,
+            scheduleData.targetTime.second
+        )
+
+        var startTime: LocalDateTime? = null
+        if (scheduleData.startTime != null) {
+            startTime = LocalDateTime(
+                nowDateTime.year,
+                nowDateTime.monthNumber,
+                nowDateTime.dayOfMonth,
+                scheduleData.startTime?.hour ?: 0,
+                scheduleData.startTime?.minute ?: 0,
+                scheduleData.startTime?.second ?: 0
+            )
+        }
+
+        val targetInstantFromNow: Instant
+        val differencePeriod: DateTimePeriod
+
+        when (clockType) {
+            ClockType.ALARM -> {
+                targetInstantFromNow = targetTime.toInstant(timeZone)
+                differencePeriod = now.periodUntil(
+                    targetInstantFromNow, timeZone)
+            }
+            ClockType.TIMER -> {
+                if (startTime != null) {
+                    Log.d(THIS_CLASS, "targetTime: $targetTime")
+                    Log.d(THIS_CLASS, "startTime: $startTime")
+
+                    val period = DateTimePeriod(
+                        hours = targetTime.hour,
+                        minutes = targetTime.minute,
+                        seconds = targetTime.second
+                    )
+                    val startInstant = startTime.toInstant(timeZone)
+
+                    targetInstantFromNow = startInstant.plus(period, timeZone)
+                    differencePeriod = now.periodUntil(
+                        targetInstantFromNow, timeZone)
+
+                } else {
+                    targetInstantFromNow = Instant.DISTANT_FUTURE
+                    differencePeriod = DateTimePeriod(
+                        hours = targetTime.hour,
+                        minutes = targetTime.minute,
+                        seconds = targetTime.second
+                    )
+                }
+            }
+        }
+
+        Log.d(THIS_CLASS, "differencePeriod: ${differencePeriod.seconds}")
+
+        val targetDateTime = targetInstantFromNow.toLocalDateTime(timeZone)
+        val targetText = String.format(
+            "%02d:%02d", targetDateTime.hour, targetDateTime.minute)
+        val differenceText = String.format(
+            "%02d:%02d:%02d", differencePeriod.hours, differencePeriod.minutes, differencePeriod.seconds)
+
+        Log.d(THIS_CLASS, "targetText: $targetText")
+        Log.d(THIS_CLASS, "differenceText: $differenceText")
 
         /**
          * Adjust number to return singular or plural suffix.
          * Example: 1 hour; 2 hours
          */
-        fun adjustNum(numValue: Int, singular: String, plural: String): String {
-            return when (numValue) {
-                0 -> ""
-                1 -> "1 $singular"
-                else -> "$numValue $plural"
+        fun Int.pluralText(text: String): String {
+            return when {
+                (this > 1) -> "$this ${text}s"
+                (this == 1) -> "$this $text"
+                else -> ""
             }
         }
 
-        when (clockType) {
-            // This will return text for timer type
-            ClockType.TIMER -> {
-                /**
-                 * Setting setHour and setMinute according to input, also limiting upper limit to
-                 * 24 hours and 60 minutes each. If setMinute goes beyond upper limit, then the rest
-                 * will be added to setHour.
-                 */
+        val textHour = differencePeriod.hours.pluralText("hour")
+        val textMinute = differencePeriod.minutes.pluralText("minute")
+        val textSecond = differencePeriod.seconds.pluralText("second")
 
-                // Get incoming call exact starting time
-                var setHour = (currentHour + hour) % 24
-                var setMinute = (currentMinute + minute)
-                while (setMinute > 60) {
-                    setHour++
-                    setMinute %= 60
-                }
+        // Checks if all val is not blank
+        val builder = StringBuilder()
+        if (textHour.isNotBlank()) builder.append(" ").append(textHour)
+        if (textMinute.isNotBlank()) builder.append(" ").append(textMinute)
+        if (textSecond.isNotBlank()) builder.append(" ").append(textSecond)
+        displayText = builder.toString()
 
-                // Set padding for setHour & setMinute
-                val hourPad: String = setHour.toString().padStart(2, '0')
-                val minutePad: String = setMinute.toString().padStart(2, '0')
-
-                val textHour: String = adjustNum(hour, "hour", "hours")
-                val textMinute = adjustNum(minute, "minute", "minutes")
-                val textSecond = adjustNum(second, "second", "seconds")
-
-                // Checks if all val is not blank
-                displayText =
-                    if (textHour.isNotBlank() && textMinute.isNotBlank() && textSecond.isNotBlank()) {
-                        // Use already existing data with updateRelativeTime() in digits
-                        // (example text format = 00:00:00)
-                        val hourPadToDisplay: String = hour.toString().padStart(2, '0')
-                        val minutePadToDisplay: String =
-                            minute.toString().padStart(2, '0')
-                        val secondPadToDisplay: String =
-                            second.toString().padStart(2, '0')
-                        " $hourPadToDisplay:$minutePadToDisplay:$secondPadToDisplay"
-                    } else {
-                        // Otherwise use sets of string to represent time
-                        // (example text format = 2 hours 3 minutes)
-                        val builder = StringBuilder()
-                        if (textHour.isNotBlank()) builder.append(" ").append(textHour)
-                        if (textMinute.isNotBlank()) builder.append(" ").append(textMinute)
-                        if (textSecond.isNotBlank()) builder.append(" ").append(textSecond)
-                        builder.toString()
-                    }
-
-                // Set now or else
-                if (hour == 0 && minute == 0 && second == 0) {
-                    mainScheduleText = "Now"
-                    notificationText = "The call is starting now"
-                } else {
-                    mainScheduleText = displayText
-                    notificationText = "Preparing call for$displayText ($hourPad:$minutePad)"
-                }
-
+        // Set now or else
+        if (differencePeriod.hours <= 0 && differencePeriod.minutes <= 0 && differencePeriod.seconds <= 0) {
+            mainScheduleText = "Now"
+            notificationText = "Preparing call"
+        } else {
+            mainScheduleText = when(clockType) {
+                ClockType.TIMER -> displayText
+                ClockType.ALARM -> targetText
             }
-            // This will return text for alarm type
-            ClockType.ALARM -> {
-                val hourPad: String = hour.toString().padStart(2, '0')
-                val minutePad: String = minute.toString().padStart(2, '0')
-
-                // dataMinuteOfDay is total time from 00:00 to target time in minutes
-                val dataMinuteOfDay = (hour * 60) + minute
-                println("dataMinuteDay: $dataMinuteOfDay")
-                // currentMinuteOfDay is total time from 00:00 until now in minutes
-                val currentMinuteOfDay = (currentHour * 60) + currentMinute
-                println("currentMinuteDay: $currentMinuteOfDay")
-                // minuteOfDay is total time from now to target time in minutes
-                val minuteOfDay = dataMinuteOfDay - currentMinuteOfDay
-
-                val textHour: String = adjustNum(minuteOfDay / 60, "hour", "hours")
-                val textMinute = adjustNum(minuteOfDay % 60, "minute", "minutes")
-
-                val builder = StringBuilder()
-                if (textHour.isNotBlank()) builder.append(" ").append(textHour)
-                if (textMinute.isNotBlank()) builder.append(" ").append(textMinute)
-                displayText = builder.toString()
-
-                if (dataMinuteOfDay <= currentMinuteOfDay) {
-                    mainScheduleText = "Now"
-                    notificationText = "The call is starting now"
-                } else {
-                    mainScheduleText = "$hourPad:$minutePad"
-                    notificationText = "Preparing call for$displayText ($hourPad:$minutePad)"
-                }
-            }
+            notificationText = "Setting call for$displayText ($targetText)"
         }
+
         Log.d("UpdateTextObject", "mainScheduleText is $mainScheduleText")
         Log.d("UpdateTextObject", "notificationText is $notificationText")
 

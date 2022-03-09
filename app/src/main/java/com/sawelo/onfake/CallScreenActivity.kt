@@ -1,10 +1,11 @@
-package com.sawelo.onfake.call_screen
+package com.sawelo.onfake
 
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
@@ -12,10 +13,15 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.sawelo.onfake.MainActivity
 import com.sawelo.onfake.`object`.DeclineObject
 import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstIncomingCall
 import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstOngoingCall
@@ -33,7 +39,7 @@ class CallScreenActivity : ComponentActivity() {
     private lateinit var proximityWakeLock: PowerManager.WakeLock
     private val callScreenReceiver = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, receiverIntent: Intent?) {
-            if (receiverIntent?.action == DESTROY_ACTIVITY) {
+            if (receiverIntent?.action == DESTROY_CALL_SCREEN_ACTIVITY) {
                 finish()
             }
         }
@@ -47,7 +53,7 @@ class CallScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        registerReceiver(callScreenReceiver, IntentFilter(DESTROY_ACTIVITY))
+        registerReceiver(callScreenReceiver, IntentFilter(DESTROY_CALL_SCREEN_ACTIVITY))
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         proximityWakeLock = powerManager.newWakeLock(
             PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "infake::proximity_wake_lock")
@@ -55,18 +61,24 @@ class CallScreenActivity : ComponentActivity() {
         fun setWakeLock() = proximityWakeLock.acquire(10 * 60 * 1000L)
         showWhenLocked()
 
-        val profileData =
-            intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
         val isStartFromIncoming =
             intent.getBooleanExtra(MainActivity.IS_START_FROM_INCOMING_EXTRA, true)
 
-        val contactData = ContactData(
-            profileData.name,
-            profileData.photoUri
-        )
-
         setContent {
+            val context = LocalContext.current
             val navController = rememberNavController()
+            var callProfile by rememberSaveable { mutableStateOf(CallProfileData())}
+
+            LaunchedEffect(true) {
+                val db = AppDatabase.getInstance(context)
+                callProfile = db.callProfileDao().getCallProfile().first()
+            }
+
+            val contactData = ContactData(
+                callProfile.name,
+                Uri.parse(callProfile.photoUri)
+            )
+
             OnFakeTheme {
                 NavHost(
                     navController = navController,
@@ -87,7 +99,7 @@ class CallScreenActivity : ComponentActivity() {
                         DeclineObject.declineFunction(this@CallScreenActivity, declineData)
                     }
 
-                    when (profileData.callScreen) {
+                    when (callProfile.callScreen) {
                         CallScreen.WHATSAPP_FIRST -> {
                             composable(INCOMING_CALL_ROUTE) {
                                 WhatsAppFirstIncomingCall(
@@ -174,6 +186,6 @@ class CallScreenActivity : ComponentActivity() {
         const val THIS_CLASS = "CallScreenActivity"
         const val INCOMING_CALL_ROUTE = "incoming_call"
         const val ONGOING_CALL_ROUTE = "ongoing_call"
-        const val DESTROY_ACTIVITY = "destroy_activity"
+        const val DESTROY_CALL_SCREEN_ACTIVITY = "destroy_call_screen_activity"
     }
 }

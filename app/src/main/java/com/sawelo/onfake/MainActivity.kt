@@ -1,15 +1,20 @@
 package com.sawelo.onfake
 
 import android.animation.ObjectAnimator
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.util.Log
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.widget.NumberPicker
 import android.widget.TimePicker
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -33,6 +38,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.bumptech.glide.request.RequestOptions
 import com.sawelo.onfake.`object`.DeclineObject
 import com.sawelo.onfake.`object`.UpdateTextObject
@@ -79,9 +87,20 @@ class MainActivity : ComponentActivity() {
         }
 
         super.onCreate(savedInstanceState)
+        val isCallActiveLiveData = MutableLiveData(AlarmService.IS_RUNNING)
+        val mainActivityReceiver = object : BroadcastReceiver() {
+            override fun onReceive(p0: Context?, receiverIntent: Intent?) {
+                if (receiverIntent?.action == DEACTIVATE_CALL) {
+                    Log.d("MainActivity", "Deactivating call from receiver")
+                    isCallActiveLiveData.value = false
+                }
+            }
+        }
+        registerReceiver(mainActivityReceiver, IntentFilter(DEACTIVATE_CALL))
+
         setContent {
             OnFakeTheme {
-                CreateProfile()
+                CreateProfile(isCallActiveLiveData)
             }
         }
     }
@@ -89,13 +108,15 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val PROFILE_EXTRA = "profile_extra"
         const val IS_START_FROM_INCOMING_EXTRA = "is_start_from_incoming_extra"
+        const val DEACTIVATE_CALL = "deactivate_call"
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun CreateProfile() {
+fun CreateProfile(isCallActiveLiveData: LiveData<Boolean>? = null) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current
     val timeZone = TimeZone.currentSystemDefault()
 
     var nameText by rememberSaveable { mutableStateOf("") }
@@ -107,6 +128,11 @@ fun CreateProfile() {
     var openScheduleListDialog by rememberSaveable { mutableStateOf(false) }
     var openTimerDialog by rememberSaveable { mutableStateOf(false) }
     var openAlarmDialog by rememberSaveable { mutableStateOf(false) }
+
+    var isCallActive by rememberSaveable { mutableStateOf(false) }
+    isCallActiveLiveData?.observe(lifecycle) {
+        isCallActive = it
+    }
 
     var tempTimeData by rememberSaveable { mutableStateOf(TimeData())}
     var fixedScheduleData by rememberSaveable { mutableStateOf(
@@ -522,7 +548,7 @@ fun CreateProfile() {
                         onCheckedChange = {checkShowNotificationText = it},
                     )
                     Text(
-                        "Show schedule in notification",
+                        "Show timer in notification",
                         fontSize = 14.sp
 
                     )
@@ -534,9 +560,9 @@ fun CreateProfile() {
                 ) {
                     val contactData = ContactData()
                     if (nameText.isNotBlank()) contactData.name =
-                        nameText else ContactDataDefaultValue.nameValue
+                        nameText else CallProfileDefaultValue.nameValue
                     if (photoUri != null) contactData.photoBitmap = photoUri as Uri else Uri.parse(
-                        ContactDataDefaultValue.photoBitmapValue
+                        CallProfileDefaultValue.photoUriValue
                     )
 
                     val configuration = LocalConfiguration.current
@@ -582,7 +608,6 @@ fun CreateProfile() {
                     }
                 }
             }
-
             Button(
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
@@ -598,31 +623,44 @@ fun CreateProfile() {
                     )
 
                     if (nameText.isNotBlank()) profileData.name = nameText
-                    if (photoUri != null) profileData.photoUri = photoUri as Uri
+                    if (photoUri != null) profileData.photoUri = photoUri.toString()
                     profileData.callScreen = callScreen
 
                     val declineData = DeclineData(
                         originInformation = "MainActivity",
                         isDestroyAlarmService = true,
                         isDestroyCallNotification = true,
-                        isDestroyCallScreenActivity = true
+                        isDestroyCallScreenActivity = true,
+                        isDeactivateCallMainActivity = false
                     )
-
                     DeclineObject.declineFunction(context, declineData)
 
-                    val alarmIntent = Intent(context, AlarmService::class.java)
-                        .putExtra(MainActivity.PROFILE_EXTRA, profileData)
+                    if(!isCallActive) {
+                        isCallActive = true
+                        val alarmIntent = Intent(context, AlarmService::class.java)
+                            .putExtra(MainActivity.PROFILE_EXTRA, profileData)
+                        if (Build.VERSION.SDK_INT >= 26) {
+                            context.startForegroundService(alarmIntent)
+                        } else {
+                            context.startService(alarmIntent)
+                        }
 
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        context.startForegroundService(alarmIntent)
+                        Toast.makeText(context, "Starting a call", Toast.LENGTH_SHORT).show()
                     } else {
-                        context.startService(alarmIntent)
+                        isCallActive = false
+                        Toast.makeText(context, "Stopping a call", Toast.LENGTH_SHORT).show()
                     }
                 }
             ) {
-                Icon(Icons.Default.AddIcCall, "Create")
-                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Create")
+                if (!isCallActive) {
+                    Icon(Icons.Default.AddIcCall, "Start")
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Start")
+                } else {
+                    Icon(Icons.Default.Close, "Stop")
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text("Stop")
+                }
             }
         }
 
@@ -668,3 +706,5 @@ fun CallScreenRow(
 
     }
 }
+
+

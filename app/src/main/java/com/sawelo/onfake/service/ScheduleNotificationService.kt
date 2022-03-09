@@ -10,22 +10,22 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.sawelo.onfake.MainActivity
+import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.R
 import com.sawelo.onfake.`object`.UpdateTextObject
-import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.receiver.DeclineReceiver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ScheduleNotificationService : Service() {
 
     private lateinit var builder: NotificationCompat.Builder
     private lateinit var notificationManager: NotificationManager
-    private lateinit var callProfile: CallProfileData
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(THIS_CLASS, "Starting $THIS_CLASS")
 
-        callProfile = intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val declineIntent = Intent(this, DeclineReceiver::class.java)
@@ -46,12 +46,31 @@ class ScheduleNotificationService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
-        val notificationText = UpdateTextObject.updateMainText(
-            callProfile.scheduleData).second
+        var notificationText = AlarmService.DEFAULT_NOTIFICATION_TEXT
 
-        Log.d(THIS_CLASS, "Current target data: ${callProfile.scheduleData.targetTime}")
-        Log.d(THIS_CLASS, "Current start data: ${callProfile.scheduleData.startTime}")
-        Log.d(THIS_CLASS, "Notification Text: $notificationText")
+        CoroutineScope(Dispatchers.IO).launch {
+            val db = AppDatabase.getInstance(this@ScheduleNotificationService)
+            val callProfile = db.callProfileDao().getCallProfile().first()
+
+            Log.d(THIS_CLASS, "Current target data: ${callProfile.scheduleData.targetTime}")
+            Log.d(THIS_CLASS, "Current start data: ${callProfile.scheduleData.startTime}")
+            Log.d(THIS_CLASS, "Notification Text: $notificationText")
+
+            notificationText = UpdateTextObject.updateMainText(
+                callProfile.scheduleData).second
+
+            // Build Notification
+            builder = NotificationCompat.Builder(this@ScheduleNotificationService, AlarmService.CHANNEL_ID)
+                .setContentTitle("Onfake")
+                .setContentText(notificationText)
+                .setSmallIcon(R.drawable.ic_baseline_notifications)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setOnlyAlertOnce(true)
+                .addAction(
+                    R.drawable.ic_baseline_cancel, "Cancel",
+                    declinePendingIntent
+                )
+        }
 
         // Build Notification
         builder = NotificationCompat.Builder(this, AlarmService.CHANNEL_ID)

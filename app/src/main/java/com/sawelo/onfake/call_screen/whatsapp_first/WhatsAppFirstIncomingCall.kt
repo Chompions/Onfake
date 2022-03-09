@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
+import com.sawelo.onfake.CallScreenActivity
 import com.sawelo.onfake.R
-import com.sawelo.onfake.call_screen.CallScreenActivity
 import com.sawelo.onfake.call_screen.CanvasButton
 import com.sawelo.onfake.call_screen.EncryptedText
 import com.sawelo.onfake.call_screen.NameText

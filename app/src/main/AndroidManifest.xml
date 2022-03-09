@@ -38,7 +38,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".call_screen.CallScreenActivity"
+            android:name=".CallScreenActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
