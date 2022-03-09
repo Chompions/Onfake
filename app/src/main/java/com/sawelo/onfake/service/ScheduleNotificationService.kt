@@ -46,17 +46,14 @@ class ScheduleNotificationService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
-        var notificationText = AlarmService.DEFAULT_NOTIFICATION_TEXT
-
         CoroutineScope(Dispatchers.IO).launch {
             val db = AppDatabase.getInstance(this@ScheduleNotificationService)
             val callProfile = db.callProfileDao().getCallProfile().first()
 
             Log.d(THIS_CLASS, "Current target data: ${callProfile.scheduleData.targetTime}")
             Log.d(THIS_CLASS, "Current start data: ${callProfile.scheduleData.startTime}")
-            Log.d(THIS_CLASS, "Notification Text: $notificationText")
 
-            notificationText = UpdateTextObject.updateMainText(
+            val notificationText = UpdateTextObject.updateMainText(
                 callProfile.scheduleData).second
 
             // Build Notification
@@ -70,22 +67,10 @@ class ScheduleNotificationService : Service() {
                     R.drawable.ic_baseline_cancel, "Cancel",
                     declinePendingIntent
                 )
+
+            notificationManager.notify(AlarmService.NOTIFICATION_ID, builder.build())
         }
 
-        // Build Notification
-        builder = NotificationCompat.Builder(this, AlarmService.CHANNEL_ID)
-            .setContentTitle("Onfake")
-            .setContentText(notificationText)
-            .setSmallIcon(R.drawable.ic_baseline_notifications)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
-            .setOnlyAlertOnce(true)
-            .addAction(
-                R.drawable.ic_baseline_cancel, "Cancel",
-                declinePendingIntent
-            )
-
-        Log.d(THIS_CLASS, "Notifying a notification")
-        notificationManager.notify(AlarmService.NOTIFICATION_ID, builder.build())
         return START_STICKY
     }
 
