@@ -87,7 +87,7 @@ fun WhatsAppFirstIncomingCall(
             Box(
                 Modifier
                     .padding(2.dp)
-                    .weight(1f),
+                    .weight(3f),
                 contentAlignment = Alignment.Center
             ) {
                 EncryptedText()
@@ -96,7 +96,7 @@ fun WhatsAppFirstIncomingCall(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .padding(5.dp)
-                    .weight(4f)
+                    .weight(9f)
             ) {
                 Surface(
                     shape = CircleShape,
@@ -122,7 +122,7 @@ fun WhatsAppFirstIncomingCall(
             Box(
                 Modifier
                     .padding(2.dp)
-                    .weight(2f),
+                    .weight(4f),
                 contentAlignment = Alignment.Center
             ) {
                 NameText(name = contactData.name)
@@ -130,7 +130,7 @@ fun WhatsAppFirstIncomingCall(
             Box(
                 Modifier
                     .padding(4.dp)
-                    .weight(1f),
+                    .weight(3f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -140,7 +140,7 @@ fun WhatsAppFirstIncomingCall(
                     fontWeight = FontWeight.W400,
                 )
             }
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.weight(1f))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

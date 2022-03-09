@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.bumptech.glide.request.RequestOptions
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.sawelo.onfake.R
 import com.sawelo.onfake.CallScreenActivity
+import com.sawelo.onfake.R
 import com.sawelo.onfake.call_screen.CanvasButton
 import com.sawelo.onfake.call_screen.NameText
 import com.sawelo.onfake.data_class.ContactData
@@ -90,37 +90,46 @@ fun WhatsAppSecondIncomingCall(
                 .weight(4f)
                 .fillMaxWidth()
         ) {
-            Surface(
-                shape = CircleShape,
-                elevation = 8.dp,
+            Spacer(Modifier.weight(3f))
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .padding(5.dp)
-                    .size(100.dp),
-                color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
-            ) {
-                if (!LocalView.current.isInEditMode) {
-                    GlideImage(
-                        imageModel = contactData.photoBitmap,
-                        loading = {
-                            CircularProgressIndicator(Modifier.align(Alignment.Center))
-                        },
-                        requestOptions = {
-                            RequestOptions().override(500, 500)
-                        },
-                        contentScale = ContentScale.Crop,
-                    )
+                    .weight(9f)
+            ){
+                Surface(
+                    shape = CircleShape,
+                    elevation = 8.dp,
+                    modifier = Modifier.aspectRatio(1f),
+                    color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
+                ) {
+                    if (!LocalView.current.isInEditMode) {
+                        GlideImage(
+                            imageModel = contactData.photoBitmap,
+                            loading = {
+                                CircularProgressIndicator(Modifier.align(Alignment.Center))
+                            },
+                            requestOptions = {
+                                RequestOptions().override(500, 500)
+                            },
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
                 }
             }
+
             Box(
                 Modifier
-                    .padding(top = 12.dp),
+                    .padding(top = 12.dp)
+                    .weight(4f),
                 contentAlignment = Alignment.Center
             ) {
                 NameText(name = contactData.name)
             }
             Box(
                 Modifier
-                    .padding(top = 8.dp),
+                    .padding(top = 8.dp)
+                    .weight(3f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -130,6 +139,7 @@ fun WhatsAppSecondIncomingCall(
                     fontWeight = FontWeight.W400,
                     )
             }
+            Spacer(modifier = Modifier.weight(1f))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
