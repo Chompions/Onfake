@@ -140,6 +140,7 @@ fun WhatsAppFirstIncomingCall(
                     fontWeight = FontWeight.W400,
                 )
             }
+            Spacer(modifier = Modifier.size(8.dp))
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
