@@ -44,31 +44,4 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center_horizontal"
-        android:orientation="horizontal"
-        android:paddingHorizontal="1dp"
-        android:paddingTop="12dp">
-
-        <Button
-            android:id="@+id/btnDecline"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="6dp"
-            android:layout_weight="1"
-            android:text="@string/decline" />
-
-        <Button
-            android:id="@+id/btnAnswer"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:text="@string/answer" />
-
-    </LinearLayout>
-
-
 </LinearLayout>

@@ -86,46 +86,51 @@ fun WhatsAppFirstIncomingCall(
         ) {
             Box(
                 Modifier
-                    .weight(1f)
-                    .padding(2.dp),
+                    .padding(2.dp)
+                    .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
                 EncryptedText()
             }
-            Surface(
-                shape = CircleShape,
-                elevation = 8.dp,
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .weight(3f)
                     .padding(5.dp)
-                    .size(100.dp),
-                color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
+                    .weight(4f)
             ) {
-                if (!LocalView.current.isInEditMode) {
-                    GlideImage(
-                        imageModel = contactData.photoBitmap,
-                        loading = {
-                            CircularProgressIndicator(Modifier.align(Alignment.Center))
-                        },
-                        requestOptions = {
-                            RequestOptions().override(500, 500)
-                        },
-                        contentScale = ContentScale.Crop,
-                    )
+                Surface(
+                    shape = CircleShape,
+                    modifier = Modifier.aspectRatio(1f),
+                    elevation = 8.dp,
+                    color = MaterialTheme.colors.onSurface.copy(alpha = .2f)
+                ) {
+                    if (!LocalView.current.isInEditMode) {
+                        GlideImage(
+                            imageModel = contactData.photoBitmap,
+                            loading = {
+                                CircularProgressIndicator(Modifier.align(Alignment.Center))
+                            },
+                            requestOptions = {
+                                RequestOptions().override(500, 500)
+                            },
+                            contentScale = ContentScale.Crop,
+                        )
+
+                    }
                 }
             }
             Box(
                 Modifier
-                    .weight(1f)
-                    .padding(2.dp),
+                    .padding(2.dp)
+                    .weight(2f),
                 contentAlignment = Alignment.Center
             ) {
                 NameText(name = contactData.name)
             }
             Box(
                 Modifier
-                    .weight(1f)
-                    .padding(8.dp),
+                    .padding(4.dp)
+                    .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -133,7 +138,7 @@ fun WhatsAppFirstIncomingCall(
                     fontSize = 17.sp,
                     color = Color.White,
                     fontWeight = FontWeight.W400,
-                    )
+                )
             }
         }
         Column(

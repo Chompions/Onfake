@@ -12,7 +12,7 @@ import kotlinx.parcelize.Parcelize
 data class CallProfileData(
     var name: String = CallProfileDefaultValue.nameValue,
     var photoUri: String = CallProfileDefaultValue.photoUriValue,
-    var callScreen: CallScreen = CallScreen.WHATSAPP_FIRST,
+    var callScreen: CallScreen? = null,
     @PrimaryKey val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER, TimeData()),
     val showNotificationText: Boolean = false
 ) : Parcelable

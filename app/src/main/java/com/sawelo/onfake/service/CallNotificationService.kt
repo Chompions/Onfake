@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
-import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
@@ -37,11 +36,6 @@ class CallNotificationService : Service() {
         Log.d(THIS_CLASS, "Starting CallNotificationService")
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Create RemoteViews with custom layout
-        val customNotificationLayout = RemoteViews(
-            com.sawelo.onfake.BuildConfig.APPLICATION_ID, R.layout.notification_whats_app
-        )
 
         // Initialize Intents
         val defaultIntent = Intent(this, CallScreenActivity::class.java)
@@ -91,27 +85,6 @@ class CallNotificationService : Service() {
             )
         }
 
-        runBlocking(Dispatchers.IO) {
-            val bitmap = Glide.with(this@CallNotificationService)
-                .asBitmap()
-                .load(CallProfileDefaultValue.photoUriValue)
-                .apply(
-                    RequestOptions
-                        .overrideOf(250, 250)
-                        .circleCrop()
-                )
-                .submit()
-                .get()
-
-            customNotificationLayout.apply{
-                setImageViewBitmap(R.id.notification_picture, bitmap)
-                setTextViewText(R.id.notification_name, CallProfileDefaultValue.nameValue)
-            }
-        }
-
-        customNotificationLayout.setOnClickPendingIntent(R.id.btnAnswer, answerPendingIntent)
-        customNotificationLayout.setOnClickPendingIntent(R.id.btnDecline, declinePendingIntent)
-
         // Create NotificationChannel only on API 26+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -134,6 +107,34 @@ class CallNotificationService : Service() {
         }
 
         builder = NotificationCompat.Builder(this@CallNotificationService, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_baseline_notifications)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setFullScreenIntent(defaultPendingIntent, true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+            .setVibrate(longArrayOf(1000, 1000))
+            .setAutoCancel(true)
+            .addAction(R.drawable.ic_baseline_call_end_24, "Decline", declinePendingIntent)
+            .addAction(R.drawable.ic_baseline_call_24, "Answer", answerPendingIntent)
+
+        runBlocking(Dispatchers.IO) {
+            val bitmap = Glide.with(this@CallNotificationService)
+                .asBitmap()
+                .load(CallProfileDefaultValue.photoUriValue)
+                .apply(
+                    RequestOptions
+                        .overrideOf(250, 250)
+                        .circleCrop()
+                )
+                .submit()
+                .get()
+
+            builder
+                .setContentTitle("Call")
+                .setContentText("Incoming voice call")
+                .setLargeIcon(bitmap)
+        }
 
         CoroutineScope(Dispatchers.IO).launch {
             val db = AppDatabase.getInstance(this@CallNotificationService)
@@ -152,26 +153,14 @@ class CallNotificationService : Service() {
                     .submit()
                     .get()
 
-                customNotificationLayout.apply{
-                    setImageViewBitmap(R.id.notification_picture, bitmap)
-                    setTextViewText(R.id.notification_name, callProfile.name)
-                }
+                builder
+                    .setContentTitle(callProfile.name)
+                    .setContentText("Incoming voice call")
+                    .setLargeIcon(bitmap)
                 Log.d(THIS_CLASS, "Setting bitmap finished")
             }
 
             Log.d(THIS_CLASS, "Building builder in Dispatchers.IO")
-
-            // Build Notification
-            builder.setSmallIcon(R.drawable.ic_baseline_notifications)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_CALL)
-                .setFullScreenIntent(defaultPendingIntent, true)
-                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-                .setCustomContentView(customNotificationLayout)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
-                .setVibrate(longArrayOf(1000, 1000))
-                .setAutoCancel(true)
 
             val buildNotification: Notification = builder.build().apply {
                 this.flags = Notification.FLAG_INSISTENT
@@ -179,18 +168,6 @@ class CallNotificationService : Service() {
 
             startForeground(NOTIFICATION_ID, buildNotification)
         }
-
-        // Build Notification
-        builder.setSmallIcon(R.drawable.ic_baseline_notifications)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setFullScreenIntent(defaultPendingIntent, true)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(customNotificationLayout)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
-            .setVibrate(longArrayOf(1000, 1000))
-            .setAutoCancel(true)
 
         val buildNotification: Notification = builder.build().apply {
             this.flags = Notification.FLAG_INSISTENT
