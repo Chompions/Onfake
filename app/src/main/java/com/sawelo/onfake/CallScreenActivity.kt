@@ -31,12 +31,12 @@ import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstIncomingCall
 import com.sawelo.onfake.call_screen.whatsapp_first.WhatsAppFirstOngoingCall
 import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondIncomingCall
 import com.sawelo.onfake.call_screen.whatsapp_second.WhatsAppSecondOngoingCall
-import com.sawelo.onfake.data_class.CallProfileData
-import com.sawelo.onfake.data_class.CallScreen
-import com.sawelo.onfake.data_class.ContactData
-import com.sawelo.onfake.data_class.DeclineData
-import com.sawelo.onfake.receiver.DeclineReceiver
+import com.sawelo.onfake.data_class.*
 import com.sawelo.onfake.ui.theme.OnFakeTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class CallScreenActivity : ComponentActivity() {
 
@@ -71,16 +71,23 @@ class CallScreenActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val navController = rememberNavController()
-            var callProfile by rememberSaveable { mutableStateOf(CallProfileData())}
+            var callProfile by rememberSaveable { mutableStateOf<CallProfileData?>(null)}
 
             LaunchedEffect(true) {
-                val db = AppDatabase.getInstance(context)
-                callProfile = db.callProfileDao().getCallProfile().first()
+                CoroutineScope(Dispatchers.IO).launch {
+                    Log.d(THIS_CLASS, "Pulling database")
+                    val db = AppDatabase.getInstance(context)
+                    while (callProfile == null) {
+                        delay(500)
+                        callProfile = db.callProfileDao().getCallProfile().firstOrNull()
+                    }
+                    Log.d(THIS_CLASS, "Obtained call profile")
+                }
             }
 
             val contactData = ContactData(
-                callProfile.name,
-                Uri.parse(callProfile.photoUri)
+                callProfile?.name ?: CallProfileDefaultValue.nameValue,
+                Uri.parse(callProfile?.photoUri ?: CallProfileDefaultValue.photoUriValue)
             )
 
             OnFakeTheme {
@@ -103,7 +110,7 @@ class CallScreenActivity : ComponentActivity() {
                         DeclineObject.declineFunction(this@CallScreenActivity, declineData)
                     }
 
-                    when (callProfile.callScreen) {
+                    when (callProfile?.callScreen) {
                         CallScreen.WHATSAPP_FIRST -> {
                             composable(INCOMING_CALL_ROUTE) {
                                 WhatsAppFirstIncomingCall(
@@ -156,9 +163,9 @@ class CallScreenActivity : ComponentActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun showWhenLocked() {
         // Ensure CallActivity will run when the phone is locked or the screen is off
-        @Suppress("DEPRECATION")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -171,7 +178,8 @@ class CallScreenActivity : ComponentActivity() {
                         WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                        WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS or
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             )
         }
 
@@ -179,12 +187,20 @@ class CallScreenActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 requestDismissKeyguard(this@CallScreenActivity, null)
             }
+            val keyLock = this.newKeyguardLock("IN")
+            keyLock.disableKeyguard()
         }
     }
 
     override fun onDestroy() {
-        val declineIntent = Intent(this, DeclineReceiver::class.java)
-        sendBroadcast(declineIntent)
+        Log.d(THIS_CLASS, "Send decline broadcast from OnDestroy")
+        val declineData = DeclineData(
+            originInformation = THIS_CLASS,
+            isDestroyAlarmService = true,
+            isDestroyCallNotification = true,
+            isDestroyCallScreenActivity = false,
+        )
+        DeclineObject.declineFunction(this@CallScreenActivity, declineData)
 
         unregisterReceiver(callScreenReceiver)
         proximityWakeLock.release()

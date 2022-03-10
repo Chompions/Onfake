@@ -1,9 +1,6 @@
 package com.sawelo.onfake
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
+import androidx.room.*
 import com.sawelo.onfake.data_class.CallProfileData
 
 @Dao
@@ -11,7 +8,7 @@ interface CallProfileDao {
     @Query("SELECT * FROM callProfileData")
     suspend fun getCallProfile(): List<CallProfileData>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg callProfileData: CallProfileData)
 
     @Delete

@@ -29,9 +29,9 @@ object UpdateTextObject {
 
         val clockType = scheduleData.clockType
         val targetTime = LocalDateTime(
-            nowDateTime.year,
-            nowDateTime.monthNumber,
-            nowDateTime.dayOfMonth,
+            scheduleData.startTime?.year ?: nowDateTime.year,
+            scheduleData.startTime?.month ?: nowDateTime.monthNumber,
+            scheduleData.startTime?.dayOfMonth ?: nowDateTime.dayOfMonth,
             scheduleData.targetTime.hour,
             scheduleData.targetTime.minute,
             scheduleData.targetTime.second
@@ -40,23 +40,33 @@ object UpdateTextObject {
         var startTime: LocalDateTime? = null
         if (scheduleData.startTime != null) {
             startTime = LocalDateTime(
-                nowDateTime.year,
-                nowDateTime.monthNumber,
-                nowDateTime.dayOfMonth,
+                scheduleData.startTime?.year ?: nowDateTime.year,
+                scheduleData.startTime?.month ?: nowDateTime.monthNumber,
+                scheduleData.startTime?.dayOfMonth ?: nowDateTime.dayOfMonth,
                 scheduleData.startTime?.hour ?: 0,
                 scheduleData.startTime?.minute ?: 0,
                 scheduleData.startTime?.second ?: 0
             )
         }
 
-        val targetInstantFromNow: Instant
-        val differencePeriod: DateTimePeriod
+        val targetInstant: Instant
+        var differencePeriod: DateTimePeriod
 
         when (clockType) {
             ClockType.ALARM -> {
-                targetInstantFromNow = targetTime.toInstant(timeZone)
+                targetInstant = targetTime.toInstant(timeZone)
                 differencePeriod = now.periodUntil(
-                    targetInstantFromNow, timeZone)
+                    targetInstant, timeZone)
+
+                if (differencePeriod.hours <= 0
+                    || differencePeriod.minutes <= 0
+                    || differencePeriod.seconds <= 0) {
+                    val adjustedTargetInstant = targetInstant
+                        .plus(1, DateTimeUnit.DAY, timeZone)
+
+                    differencePeriod = now.periodUntil(
+                        adjustedTargetInstant, timeZone)
+                }
             }
             ClockType.TIMER -> {
                 if (startTime != null) {
@@ -68,14 +78,24 @@ object UpdateTextObject {
                         minutes = targetTime.minute,
                         seconds = targetTime.second
                     )
-                    val startInstant = startTime.toInstant(timeZone)
 
-                    targetInstantFromNow = startInstant.plus(period, timeZone)
+                    val startInstant = startTime.toInstant(timeZone)
+                    targetInstant = startInstant.plus(period, timeZone)
                     differencePeriod = now.periodUntil(
-                        targetInstantFromNow, timeZone)
+                        targetInstant, timeZone)
+
+                    if (differencePeriod.hours <= 0
+                        || differencePeriod.minutes <= 0
+                        || differencePeriod.seconds <= 0) {
+                        val adjustedTargetInstant = targetInstant
+                            .plus(1, DateTimeUnit.DAY, timeZone)
+
+                        differencePeriod = now.periodUntil(
+                            adjustedTargetInstant, timeZone)
+                    }
 
                 } else {
-                    targetInstantFromNow = Instant.DISTANT_FUTURE
+                    targetInstant = Instant.DISTANT_FUTURE
                     differencePeriod = DateTimePeriod(
                         hours = targetTime.hour,
                         minutes = targetTime.minute,
@@ -87,7 +107,7 @@ object UpdateTextObject {
 
         Log.d(THIS_CLASS, "differencePeriod: ${differencePeriod.seconds}")
 
-        val targetDateTime = targetInstantFromNow.toLocalDateTime(timeZone)
+        val targetDateTime = targetInstant.toLocalDateTime(timeZone)
         val targetText = String.format(
             "%02d:%02d", targetDateTime.hour, targetDateTime.minute)
         val differenceText = String.format(

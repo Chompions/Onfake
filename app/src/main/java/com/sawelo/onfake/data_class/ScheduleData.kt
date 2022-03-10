@@ -18,6 +18,9 @@ data class TimeData(
     var hour: Int = 0,
     var minute: Int = 0,
     var second: Int = 0,
+    val year: Int? = null,
+    val month: Int? = null,
+    val dayOfMonth: Int? = null,
 ): Parcelable
 
 enum class ClockType {

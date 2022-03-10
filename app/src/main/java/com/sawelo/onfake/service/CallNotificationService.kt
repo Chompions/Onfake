@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
@@ -17,12 +18,12 @@ import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.CallScreenActivity
 import com.sawelo.onfake.MainActivity
 import com.sawelo.onfake.R
-import com.sawelo.onfake.data_class.CallProfileDefaultValue
+import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.receiver.DeclineReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 
@@ -92,6 +93,9 @@ class CallNotificationService : Service() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
+                enableLights(true)
+                lightColor = Color.RED
+                vibrationPattern = longArrayOf(1000, 2000)
                 val audioAttributes = AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
@@ -100,45 +104,21 @@ class CallNotificationService : Service() {
                     RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
                     audioAttributes
                 )
-                vibrationPattern = longArrayOf(1000, 1000)
             }
             // Register the channel with the system
             notificationManager.createNotificationChannel(channel)
         }
 
-        builder = NotificationCompat.Builder(this@CallNotificationService, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_baseline_notifications)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setFullScreenIntent(defaultPendingIntent, true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
-            .setVibrate(longArrayOf(1000, 1000))
-            .setAutoCancel(true)
-            .addAction(R.drawable.ic_baseline_call_end_24, "Decline", declinePendingIntent)
-            .addAction(R.drawable.ic_baseline_call_24, "Answer", answerPendingIntent)
-
-        runBlocking(Dispatchers.IO) {
-            val bitmap = Glide.with(this@CallNotificationService)
-                .asBitmap()
-                .load(CallProfileDefaultValue.photoUriValue)
-                .apply(
-                    RequestOptions
-                        .overrideOf(250, 250)
-                        .circleCrop()
-                )
-                .submit()
-                .get()
-
-            builder
-                .setContentTitle("Call")
-                .setContentText("Incoming voice call")
-                .setLargeIcon(bitmap)
-        }
-
         CoroutineScope(Dispatchers.IO).launch {
+            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@CallNotificationService)
-            val callProfile = db.callProfileDao().getCallProfile().first()
+            var callProfile: CallProfileData? = null
+            while (callProfile == null) {
+                delay(500)
+                callProfile = db.callProfileDao().getCallProfile().firstOrNull()
+            }
+
+            Log.d(THIS_CLASS, "Obtained call profile")
 
             runCatching {
                 Log.d(THIS_CLASS, "Setting bitmap started")
@@ -153,24 +133,30 @@ class CallNotificationService : Service() {
                     .submit()
                     .get()
 
-                builder
+                builder = NotificationCompat.Builder(this@CallNotificationService, CHANNEL_ID)
+                    .addAction(R.drawable.ic_baseline_call_end_24, "Decline", declinePendingIntent)
+                    .addAction(R.drawable.ic_baseline_call_24, "Answer", answerPendingIntent)
                     .setContentTitle(callProfile.name)
                     .setContentText("Incoming voice call")
                     .setLargeIcon(bitmap)
+                    .setSmallIcon(R.drawable.ic_baseline_notifications)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_CALL)
+                    .setFullScreenIntent(defaultPendingIntent, true)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setVibrate(longArrayOf(1000, 2000))
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
+                    .setAutoCancel(true)
+                    .setDefaults(Notification.DEFAULT_LIGHTS)
+
                 Log.d(THIS_CLASS, "Setting bitmap finished")
             }
-
-            Log.d(THIS_CLASS, "Building builder in Dispatchers.IO")
 
             val buildNotification: Notification = builder.build().apply {
                 this.flags = Notification.FLAG_INSISTENT
             }
 
             startForeground(NOTIFICATION_ID, buildNotification)
-        }
-
-        val buildNotification: Notification = builder.build().apply {
-            this.flags = Notification.FLAG_INSISTENT
         }
 
         // Countdown until CallNotificationService stops
@@ -191,7 +177,6 @@ class CallNotificationService : Service() {
         stopService(alarmIntent)
 
         stopTimer.start()
-        startForeground(NOTIFICATION_ID, buildNotification)
         return START_STICKY
     }
 

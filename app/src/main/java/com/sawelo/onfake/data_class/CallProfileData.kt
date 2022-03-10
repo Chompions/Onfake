@@ -13,8 +13,11 @@ data class CallProfileData(
     var name: String = CallProfileDefaultValue.nameValue,
     var photoUri: String = CallProfileDefaultValue.photoUriValue,
     var callScreen: CallScreen? = null,
-    @PrimaryKey val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER, TimeData()),
-    val showNotificationText: Boolean = false
+    val scheduleData: ScheduleData = ScheduleData(ClockType.TIMER, TimeData(
+        23, 59, 59
+    )),
+    val showNotificationText: Boolean = false,
+    @PrimaryKey val id: Int = 1,
 ) : Parcelable
 
 enum class CallScreen {

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.sawelo.onfake.AppDatabase
@@ -15,11 +14,8 @@ import com.sawelo.onfake.R
 import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.data_class.ClockType
 import com.sawelo.onfake.receiver.DeclineReceiver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class AlarmService : Service() {
 
@@ -31,7 +27,8 @@ class AlarmService : Service() {
     private lateinit var callIntent: Intent
     private lateinit var notificationIntent: Intent
     private lateinit var callPendingIntent: PendingIntent
-    private lateinit var notificationPendingIntent: PendingIntent
+
+    private var coroutineJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -91,8 +88,16 @@ class AlarmService : Service() {
         callProfile = intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
 
         CoroutineScope(Dispatchers.IO).launch {
+            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@AlarmService)
-            db.callProfileDao().insertAll(callProfile)
+            var callProfileCheck: CallProfileData? = null
+            while (callProfileCheck == null) {
+                delay(500)
+                db.callProfileDao().insertAll(callProfile)
+                callProfileCheck = db.callProfileDao().getCallProfile().firstOrNull()
+            }
+
+            Log.d(THIS_CLASS, "Inserted call profile")
         }
 
         settingIntent()
@@ -105,19 +110,6 @@ class AlarmService : Service() {
     private fun settingIntent() {
         //Setting intent for ScheduleNotificationService
         notificationIntent = Intent(this, ScheduleNotificationService::class.java)
-
-        @SuppressLint("UnspecifiedImmutableFlag")
-        notificationPendingIntent = if (Build.VERSION.SDK_INT >= 23) {
-            PendingIntent.getService(
-                this, NOTIFICATION_PENDING_INTENT_CODE, notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-        } else {
-            PendingIntent.getService(
-                this, NOTIFICATION_PENDING_INTENT_CODE, notificationIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
-        }
 
         // Setting intent for CallNotificationService
         callIntent = Intent(this, CallNotificationService::class.java)
@@ -137,13 +129,13 @@ class AlarmService : Service() {
 
     private fun updateNotification() {
         Log.d(THIS_CLASS, "Run updateNotification()")
-        startService(notificationIntent)
-        alarmManager.setRepeating(
-            AlarmManager.ELAPSED_REALTIME,
-            SystemClock.elapsedRealtime() + TimeUnit.MINUTES.toMillis(1),
-            TimeUnit.MINUTES.toMillis(1),
-            notificationPendingIntent
-        )
+        coroutineJob = CoroutineScope(Dispatchers.IO).launch {
+            while (IS_RUNNING) {
+                delay(1000)
+                startService(notificationIntent)
+            }
+        }
+        coroutineJob?.start()
     }
 
     // Setting RCT_Wakeup directly to FlutterReceiver
@@ -169,6 +161,11 @@ class AlarmService : Service() {
                 Log.d(THIS_CLASS, "Using alarmType")
                 c.apply {
                     timeInMillis = System.currentTimeMillis()
+                    val startHour = callProfile.scheduleData.startTime?.hour
+                    val targetHour = callProfile.scheduleData.targetTime.hour
+                    if (startHour != null && targetHour < startHour) {
+                        set(Calendar.DAY_OF_YEAR,(c.get(Calendar.DAY_OF_YEAR) + 1))
+                    }
                     set(Calendar.HOUR_OF_DAY, callProfile.scheduleData.targetTime.hour)
                     set(Calendar.MINUTE, callProfile.scheduleData.targetTime.minute)
                 }
@@ -197,9 +194,9 @@ class AlarmService : Service() {
     override fun onDestroy() {
         Log.d(THIS_CLASS, "AlarmService is destroyed")
 
+        coroutineJob?.cancel()
         alarmManager.cancel(callPendingIntent)
-        alarmManager.cancel(notificationPendingIntent)
-        notificationManager.cancel(NOTIFICATION_ID)
+        notificationManager.cancelAll()
         IS_RUNNING = false
 
         super.onDestroy()
@@ -213,7 +210,6 @@ class AlarmService : Service() {
         const val NOTIFICATION_ID = 1
         const val DECLINE_PENDING_INTENT_CODE = 21
         const val CALL_PENDING_INTENT_CODE = 11
-        const val NOTIFICATION_PENDING_INTENT_CODE = 12
         var IS_RUNNING = false
     }
 }

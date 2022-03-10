@@ -13,15 +13,16 @@ import androidx.core.app.NotificationCompat
 import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.R
 import com.sawelo.onfake.`object`.UpdateTextObject
+import com.sawelo.onfake.data_class.CallProfileData
 import com.sawelo.onfake.receiver.DeclineReceiver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class ScheduleNotificationService : Service() {
 
     private lateinit var builder: NotificationCompat.Builder
     private lateinit var notificationManager: NotificationManager
+
+    private var coroutineJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(THIS_CLASS, "Starting $THIS_CLASS")
@@ -46,9 +47,15 @@ class ScheduleNotificationService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        coroutineJob = CoroutineScope(Dispatchers.IO).launch {
+            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@ScheduleNotificationService)
-            val callProfile = db.callProfileDao().getCallProfile().first()
+            var callProfile: CallProfileData? = null
+            while (callProfile == null) {
+                delay(500)
+                callProfile = db.callProfileDao().getCallProfile().firstOrNull()
+            }
+            Log.d(THIS_CLASS, "Obtained call profile")
 
             Log.d(THIS_CLASS, "Current target data: ${callProfile.scheduleData.targetTime}")
             Log.d(THIS_CLASS, "Current start data: ${callProfile.scheduleData.startTime}")
@@ -68,20 +75,25 @@ class ScheduleNotificationService : Service() {
                     declinePendingIntent
                 )
 
-            notificationManager.notify(AlarmService.NOTIFICATION_ID, builder.build())
+            if (AlarmService.IS_RUNNING) {
+                notificationManager.notify(AlarmService.NOTIFICATION_ID, builder.build())
+            }
         }
 
+        coroutineJob?.start()
         return START_STICKY
     }
 
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onDestroy() {
-        Log.d(THIS_CLASS, "$THIS_CLASS is destroyed")
+        coroutineJob?.cancel()
+        notificationManager.cancelAll()
         super.onDestroy()
+        Log.d(THIS_CLASS, "$THIS_CLASS is destroyed")
     }
 
     companion object {
-        const val THIS_CLASS = "ScheduleService"
+        const val THIS_CLASS = "ScheduleNotifService"
     }
 }

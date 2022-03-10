@@ -14,7 +14,6 @@ import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.widget.NumberPicker
 import android.widget.TimePicker
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -65,9 +64,20 @@ import kotlinx.datetime.toLocalDateTime
 
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
+    private val isCallActiveLiveData = MutableLiveData(AlarmService.IS_RUNNING)
+    private val mainActivityReceiver = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, receiverIntent: Intent?) {
+            if (receiverIntent?.action == DEACTIVATE_CALL) {
+                Log.d("MainActivity", "Deactivating call from receiver")
+                isCallActiveLiveData.value = false
+            }
+        }
+    }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        AppDatabase.getInstance(this)
+
+        val splashScreen = installSplashScreen()
         splashScreen.setOnExitAnimationListener { splashScreenView ->
             // Create your custom animation.
             val slideUp = ObjectAnimator.ofFloat(
@@ -87,15 +97,6 @@ class MainActivity : ComponentActivity() {
         }
 
         super.onCreate(savedInstanceState)
-        val isCallActiveLiveData = MutableLiveData(AlarmService.IS_RUNNING)
-        val mainActivityReceiver = object : BroadcastReceiver() {
-            override fun onReceive(p0: Context?, receiverIntent: Intent?) {
-                if (receiverIntent?.action == DEACTIVATE_CALL) {
-                    Log.d("MainActivity", "Deactivating call from receiver")
-                    isCallActiveLiveData.value = false
-                }
-            }
-        }
         registerReceiver(mainActivityReceiver, IntentFilter(DEACTIVATE_CALL))
 
         setContent {
@@ -103,6 +104,11 @@ class MainActivity : ComponentActivity() {
                 CreateProfile(isCallActiveLiveData)
             }
         }
+    }
+
+    override fun onDestroy() {
+        unregisterReceiver(mainActivityReceiver)
+        super.onDestroy()
     }
 
     companion object {
@@ -143,7 +149,10 @@ fun CreateProfile(isCallActiveLiveData: LiveData<Boolean>? = null) {
         return TimeData(
             hour = nowDateTime.hour,
             minute = nowDateTime.minute,
-            second = nowDateTime.second
+            second = nowDateTime.second,
+            year = nowDateTime.year,
+            month = nowDateTime.monthNumber,
+            dayOfMonth = nowDateTime.dayOfMonth
         )
     }
 
@@ -645,10 +654,8 @@ fun CreateProfile(isCallActiveLiveData: LiveData<Boolean>? = null) {
                             context.startService(alarmIntent)
                         }
 
-                        Toast.makeText(context, "Starting a call", Toast.LENGTH_SHORT).show()
                     } else {
                         isCallActive = false
-                        Toast.makeText(context, "Stopping a call", Toast.LENGTH_SHORT).show()
                     }
                 }
             ) {
