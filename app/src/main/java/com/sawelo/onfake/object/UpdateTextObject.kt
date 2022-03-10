@@ -1,14 +1,10 @@
 package com.sawelo.onfake.`object`
 
-import android.util.Log
 import com.sawelo.onfake.data_class.ClockType
 import com.sawelo.onfake.data_class.ScheduleData
 import kotlinx.datetime.*
 
 object UpdateTextObject {
-
-    private const val THIS_CLASS = "UpdateTextObject"
-
     /**
      *  This function will return string for mainScheduleText in MainActivity
      *  and notificationText in AlarmService respectively
@@ -70,9 +66,6 @@ object UpdateTextObject {
             }
             ClockType.TIMER -> {
                 if (startTime != null) {
-                    Log.d(THIS_CLASS, "targetTime: $targetTime")
-                    Log.d(THIS_CLASS, "startTime: $startTime")
-
                     val period = DateTimePeriod(
                         hours = targetTime.hour,
                         minutes = targetTime.minute,
@@ -105,16 +98,9 @@ object UpdateTextObject {
             }
         }
 
-        Log.d(THIS_CLASS, "differencePeriod: ${differencePeriod.seconds}")
-
         val targetDateTime = targetInstant.toLocalDateTime(timeZone)
         val targetText = String.format(
             "%02d:%02d", targetDateTime.hour, targetDateTime.minute)
-        val differenceText = String.format(
-            "%02d:%02d:%02d", differencePeriod.hours, differencePeriod.minutes, differencePeriod.seconds)
-
-        Log.d(THIS_CLASS, "targetText: $targetText")
-        Log.d(THIS_CLASS, "differenceText: $differenceText")
 
         /**
          * Adjust number to return singular or plural suffix.
@@ -150,9 +136,6 @@ object UpdateTextObject {
             }
             notificationText = "Setting call for$displayText ($targetText)"
         }
-
-        Log.d("UpdateTextObject", "mainScheduleText is $mainScheduleText")
-        Log.d("UpdateTextObject", "notificationText is $notificationText")
 
         return Pair(mainScheduleText, notificationText)
     }

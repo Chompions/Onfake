@@ -10,7 +10,6 @@ import android.media.RingtoneManager
 import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
@@ -24,7 +23,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 
 class CallNotificationService : Service() {
@@ -34,8 +32,6 @@ class CallNotificationService : Service() {
     private lateinit var builder: NotificationCompat.Builder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(THIS_CLASS, "Starting CallNotificationService")
-
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Initialize Intents
@@ -110,7 +106,6 @@ class CallNotificationService : Service() {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@CallNotificationService)
             var callProfile: CallProfileData? = null
             while (callProfile == null) {
@@ -118,10 +113,7 @@ class CallNotificationService : Service() {
                 callProfile = db.callProfileDao().getCallProfile().firstOrNull()
             }
 
-            Log.d(THIS_CLASS, "Obtained call profile")
-
             runCatching {
-                Log.d(THIS_CLASS, "Setting bitmap started")
                 val bitmap = Glide.with(this@CallNotificationService)
                     .asBitmap()
                     .load(callProfile.photoUri)
@@ -148,8 +140,6 @@ class CallNotificationService : Service() {
                     .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE))
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_LIGHTS)
-
-                Log.d(THIS_CLASS, "Setting bitmap finished")
             }
 
             val buildNotification: Notification = builder.build().apply {
@@ -161,13 +151,8 @@ class CallNotificationService : Service() {
 
         // Countdown until CallNotificationService stops
         stopTimer = object : CountDownTimer(25000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secondsUntilFinished = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished)
-                Log.d(THIS_CLASS, "Countdown: $secondsUntilFinished")
-            }
-
+            override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
-                Log.d(THIS_CLASS, "Finished")
                 this@CallNotificationService.sendBroadcast(declineIntent)
             }
         }
@@ -183,13 +168,11 @@ class CallNotificationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        Log.d(THIS_CLASS, "CallNotificationService is destroyed")
         stopTimer.cancel()
         super.onDestroy()
     }
 
     companion object {
-        const val THIS_CLASS = "CallNotificationService"
         const val CHANNEL_ID = "call_id"
         const val CHANNEL_NAME = "Call Channel"
         const val NOTIFICATION_ID = 2

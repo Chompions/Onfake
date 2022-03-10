@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.R
@@ -25,8 +24,6 @@ class ScheduleNotificationService : Service() {
     private var coroutineJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(THIS_CLASS, "Starting $THIS_CLASS")
-
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val declineIntent = Intent(this, DeclineReceiver::class.java)
@@ -48,18 +45,12 @@ class ScheduleNotificationService : Service() {
         }
 
         coroutineJob = CoroutineScope(Dispatchers.IO).launch {
-            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@ScheduleNotificationService)
             var callProfile: CallProfileData? = null
             while (callProfile == null) {
                 delay(500)
                 callProfile = db.callProfileDao().getCallProfile().firstOrNull()
             }
-            Log.d(THIS_CLASS, "Obtained call profile")
-
-            Log.d(THIS_CLASS, "Current target data: ${callProfile.scheduleData.targetTime}")
-            Log.d(THIS_CLASS, "Current start data: ${callProfile.scheduleData.startTime}")
-
             val notificationText = UpdateTextObject.updateMainText(
                 callProfile.scheduleData).second
 
@@ -90,10 +81,5 @@ class ScheduleNotificationService : Service() {
         coroutineJob?.cancel()
         notificationManager.cancelAll()
         super.onDestroy()
-        Log.d(THIS_CLASS, "$THIS_CLASS is destroyed")
-    }
-
-    companion object {
-        const val THIS_CLASS = "ScheduleNotifService"
     }
 }

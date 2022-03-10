@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.sawelo.onfake.AppDatabase
 import com.sawelo.onfake.MainActivity
@@ -33,8 +32,6 @@ class AlarmService : Service() {
     override fun onCreate() {
         super.onCreate()
         IS_RUNNING = true
-        Log.d(THIS_CLASS, "Starting AlarmService")
-
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         alarmManager = this.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -79,8 +76,6 @@ class AlarmService : Service() {
                 R.drawable.ic_baseline_cancel, "Cancel",
                 declinePendingIntent
             )
-
-        Log.d(THIS_CLASS, "Run startForeground()")
         startForeground(NOTIFICATION_ID, builder.build())
     }
 
@@ -88,7 +83,6 @@ class AlarmService : Service() {
         callProfile = intent?.getParcelableExtra(MainActivity.PROFILE_EXTRA) ?: CallProfileData()
 
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d(THIS_CLASS, "Pulling database")
             val db = AppDatabase.getInstance(this@AlarmService)
             var callProfileCheck: CallProfileData? = null
             while (callProfileCheck == null) {
@@ -96,8 +90,6 @@ class AlarmService : Service() {
                 db.callProfileDao().insertAll(callProfile)
                 callProfileCheck = db.callProfileDao().getCallProfile().firstOrNull()
             }
-
-            Log.d(THIS_CLASS, "Inserted call profile")
         }
 
         settingIntent()
@@ -128,7 +120,6 @@ class AlarmService : Service() {
     }
 
     private fun updateNotification() {
-        Log.d(THIS_CLASS, "Run updateNotification()")
         coroutineJob = CoroutineScope(Dispatchers.IO).launch {
             while (IS_RUNNING) {
                 delay(1000)
@@ -140,12 +131,9 @@ class AlarmService : Service() {
 
     // Setting RCT_Wakeup directly to FlutterReceiver
     private fun setCallAlarm() {
-        Log.d(THIS_CLASS, "Run setAlarm()")
-
         val c: Calendar = Calendar.getInstance()
         when (callProfile.scheduleData.clockType) {
             ClockType.TIMER -> {
-                Log.d(THIS_CLASS, "Using timerType")
                 c.apply {
                     timeInMillis = System.currentTimeMillis()
                     val setHour = get(Calendar.HOUR_OF_DAY) + callProfile.scheduleData.targetTime.hour
@@ -158,7 +146,6 @@ class AlarmService : Service() {
                 }
             }
             ClockType.ALARM -> {
-                Log.d(THIS_CLASS, "Using alarmType")
                 c.apply {
                     timeInMillis = System.currentTimeMillis()
                     val startHour = callProfile.scheduleData.startTime?.hour
@@ -192,8 +179,6 @@ class AlarmService : Service() {
     override fun onBind(p0: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        Log.d(THIS_CLASS, "AlarmService is destroyed")
-
         coroutineJob?.cancel()
         alarmManager.cancel(callPendingIntent)
         notificationManager.cancelAll()
@@ -203,7 +188,6 @@ class AlarmService : Service() {
     }
 
     companion object {
-        const val THIS_CLASS = "AlarmService"
         const val CHANNEL_ID = "onfake_id"
         const val CHANNEL_NAME = "Onfake Channel"
         const val DEFAULT_NOTIFICATION_TEXT = "Setting up the alarm"

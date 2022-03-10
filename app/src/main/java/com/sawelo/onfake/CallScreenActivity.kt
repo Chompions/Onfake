@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
-import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -75,13 +74,11 @@ class CallScreenActivity : ComponentActivity() {
 
             LaunchedEffect(true) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    Log.d(THIS_CLASS, "Pulling database")
                     val db = AppDatabase.getInstance(context)
                     while (callProfile == null) {
                         delay(500)
                         callProfile = db.callProfileDao().getCallProfile().firstOrNull()
                     }
-                    Log.d(THIS_CLASS, "Obtained call profile")
                 }
             }
 
@@ -100,7 +97,6 @@ class CallScreenActivity : ComponentActivity() {
                     }
                 ) {
                     fun sendDeclineIntent() {
-                        Log.d(THIS_CLASS, "Send decline broadcast from NavHost")
                         val declineData = DeclineData(
                             originInformation = THIS_CLASS,
                             isDestroyAlarmService = true,
@@ -193,7 +189,6 @@ class CallScreenActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        Log.d(THIS_CLASS, "Send decline broadcast from OnDestroy")
         val declineData = DeclineData(
             originInformation = THIS_CLASS,
             isDestroyAlarmService = true,
@@ -205,9 +200,6 @@ class CallScreenActivity : ComponentActivity() {
         unregisterReceiver(callScreenReceiver)
         proximityWakeLock.release()
         super.onDestroy()
-
-        Log.d(THIS_CLASS, "Wakelock is held: ${proximityWakeLock.isHeld}")
-        Log.d(THIS_CLASS, "CallScreenActivity is destroyed")
     }
 
     companion object {

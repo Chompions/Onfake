@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
-import android.util.Log
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.widget.NumberPicker
@@ -68,7 +67,6 @@ class MainActivity : ComponentActivity() {
     private val mainActivityReceiver = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, receiverIntent: Intent?) {
             if (receiverIntent?.action == DEACTIVATE_CALL) {
-                Log.d("MainActivity", "Deactivating call from receiver")
                 isCallActiveLiveData.value = false
             }
         }
